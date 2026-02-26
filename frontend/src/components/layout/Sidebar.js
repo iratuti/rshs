@@ -12,7 +12,8 @@ import {
   MessageSquare,
   LogOut,
   Stethoscope,
-  ChevronRight
+  ChevronRight,
+  Database
 } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
@@ -22,6 +23,7 @@ const userMenuItems = [
   { to: '/dashboard', icon: BookOpen, label: 'Input Logbook' },
   { to: '/dashboard/generator', icon: FileText, label: 'Generator Laporan' },
   { to: '/dashboard/rekap', icon: Calendar, label: 'Rekap Logbook' },
+  { to: '/dashboard/pasien', icon: Database, label: 'Master Data Pasien' },
   { to: '/dashboard/billing', icon: CreditCard, label: 'Billing' },
   { to: '/dashboard/support', icon: HelpCircle, label: 'Support' },
 ];
