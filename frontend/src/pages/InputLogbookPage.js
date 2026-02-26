@@ -19,7 +19,7 @@ import { Plus, User, Calendar, Trash2, Check, ChevronsUpDown } from 'lucide-reac
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
-// 13 Toggle Actions (exactly as specified)
+// 13 Toggle Actions (EXACTLY as specified)
 const TINDAKAN_TOGGLES = [
   { key: 'oksigenasi', label: 'Oksigenasi' },
   { key: 'perawatan_luka_sederhana', label: 'Perawatan Luka Sederhana' },
@@ -41,6 +41,13 @@ const STATUS_PASIEN_OPTIONS = [
   { value: 'PASIEN_BARU', label: 'Pasien Baru' },
   { value: 'PASIEN_LAMA', label: 'Pasien Lama' },
   { value: 'PASIEN_PULANG', label: 'Pasien Pulang' },
+];
+
+// Ketergantungan options
+const KETERGANTUNGAN_OPTIONS = [
+  { value: 'ADL_SELF_CARE', label: 'ADL Self Care' },
+  { value: 'ADL_PARTIAL_CARE', label: 'ADL Partial Care' },
+  { value: 'ADL_TOTAL_CARE', label: 'ADL Total Care' },
 ];
 
 // Keterangan Checkboxes
@@ -84,9 +91,10 @@ const InputLogbookPage = () => {
     jam_pulang: '14:00',
   });
   
-  // Tindakan form with jenis_pasien
+  // Tindakan form with jenis_pasien AND ketergantungan
   const [tindakanForm, setTindakanForm] = useState({
     jenis_pasien: 'PASIEN_LAMA',
+    ketergantungan: 'ADL_PARTIAL_CARE',
     keterangan_tindakan: [],
     catatan_lainnya: '',
     ...Object.fromEntries(TINDAKAN_TOGGLES.map(t => [t.key, false]))
@@ -217,6 +225,7 @@ const InputLogbookPage = () => {
       no_billing: selectedPatient.no_billing,
       diagnosa: selectedPatient.diagnosa,
       jenis_pasien: tindakanForm.jenis_pasien,
+      ketergantungan: tindakanForm.ketergantungan,
       ...tindakanForm
     };
 
@@ -244,6 +253,7 @@ const InputLogbookPage = () => {
     setSelectedPatient(null);
     setTindakanForm({
       jenis_pasien: 'PASIEN_LAMA',
+      ketergantungan: 'ADL_PARTIAL_CARE',
       keterangan_tindakan: [],
       catatan_lainnya: '',
       ...Object.fromEntries(TINDAKAN_TOGGLES.map(t => [t.key, false]))
@@ -308,6 +318,11 @@ const InputLogbookPage = () => {
     );
   };
 
+  const getKetergantunganLabel = (value) => {
+    const option = KETERGANTUNGAN_OPTIONS.find(o => o.value === value);
+    return option?.label || value;
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -317,43 +332,43 @@ const InputLogbookPage = () => {
   }
 
   return (
-    <div className="space-y-6 animate-slide-in">
+    <div className="space-y-4 md:space-y-6 animate-slide-in">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
         <div>
-          <h1 className="text-2xl font-heading font-bold text-slate-900">Input Logbook</h1>
-          <p className="text-slate-500 text-sm mt-1">Catat aktivitas harian Anda</p>
+          <h1 className="text-xl md:text-2xl font-heading font-bold text-slate-900">Input Logbook</h1>
+          <p className="text-slate-500 text-sm mt-0.5">Catat aktivitas harian Anda</p>
         </div>
       </div>
 
       {/* Shift Info Card */}
       <Card className="border-0 shadow-card bg-white">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-lg font-heading flex items-center gap-2">
-            <Calendar className="w-5 h-5 text-teal-600" />
+        <CardHeader className="pb-2 md:pb-3">
+          <CardTitle className="text-base md:text-lg font-heading flex items-center gap-2">
+            <Calendar className="w-4 h-4 md:w-5 md:h-5 text-teal-600" />
             Info Dinas
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="tanggal">Tanggal Dinas</Label>
+        <CardContent className="space-y-3 md:space-y-4">
+          <div className="grid grid-cols-2 gap-3 md:gap-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="tanggal" className="text-sm">Tanggal Dinas</Label>
               <Input
                 id="tanggal"
                 type="date"
                 value={formData.tanggal_dinas}
                 onChange={(e) => setFormData({...formData, tanggal_dinas: e.target.value})}
                 data-testid="input-tanggal"
-                className="h-12"
+                className="h-10 md:h-12 text-sm"
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="shift">Shift</Label>
+            <div className="space-y-1.5">
+              <Label htmlFor="shift" className="text-sm">Shift</Label>
               <Select 
                 value={formData.shift} 
                 onValueChange={(v) => setFormData({...formData, shift: v})}
               >
-                <SelectTrigger id="shift" data-testid="select-shift" className="h-12">
+                <SelectTrigger id="shift" data-testid="select-shift" className="h-10 md:h-12 text-sm">
                   <SelectValue placeholder="Pilih shift" />
                 </SelectTrigger>
                 <SelectContent>
@@ -364,27 +379,27 @@ const InputLogbookPage = () => {
               </Select>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="jam_datang">Jam Datang</Label>
+          <div className="grid grid-cols-2 gap-3 md:gap-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="jam_datang" className="text-sm">Jam Datang</Label>
               <Input
                 id="jam_datang"
                 type="time"
                 value={formData.jam_datang}
                 onChange={(e) => setFormData({...formData, jam_datang: e.target.value})}
                 data-testid="input-jam-datang"
-                className="h-12"
+                className="h-10 md:h-12 text-sm"
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="jam_pulang">Jam Pulang</Label>
+            <div className="space-y-1.5">
+              <Label htmlFor="jam_pulang" className="text-sm">Jam Pulang</Label>
               <Input
                 id="jam_pulang"
                 type="time"
                 value={formData.jam_pulang}
                 onChange={(e) => setFormData({...formData, jam_pulang: e.target.value})}
                 data-testid="input-jam-pulang"
-                className="h-12"
+                className="h-10 md:h-12 text-sm"
               />
             </div>
           </div>
@@ -392,7 +407,7 @@ const InputLogbookPage = () => {
             onClick={handleSaveLogbook} 
             disabled={saving}
             data-testid="btn-simpan-logbook"
-            className="w-full bg-teal-600 hover:bg-teal-700 h-12 rounded-xl"
+            className="w-full bg-teal-600 hover:bg-teal-700 h-10 md:h-12 rounded-xl text-sm md:text-base"
           >
             {saving ? 'Menyimpan...' : 'Simpan Info Dinas'}
           </Button>
@@ -401,32 +416,32 @@ const InputLogbookPage = () => {
 
       {/* Tindakan List */}
       <Card className="border-0 shadow-card bg-white">
-        <CardHeader className="pb-3">
+        <CardHeader className="pb-2 md:pb-3">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-lg font-heading flex items-center gap-2">
-              <User className="w-5 h-5 text-teal-600" />
-              Daftar Catatan Kegiatan ({logbook?.daftar_tindakan?.length || 0})
+            <CardTitle className="text-base md:text-lg font-heading flex items-center gap-2">
+              <User className="w-4 h-4 md:w-5 md:h-5 text-teal-600" />
+              Catatan Kegiatan ({logbook?.daftar_tindakan?.length || 0})
             </CardTitle>
             <Dialog open={showAddModal} onOpenChange={setShowAddModal}>
               <DialogTrigger asChild>
                 <Button 
                   size="sm" 
                   data-testid="btn-tambah-tindakan"
-                  className="bg-orange-500 hover:bg-orange-600 rounded-full"
+                  className="bg-orange-500 hover:bg-orange-600 rounded-full text-xs md:text-sm h-8 md:h-9"
                 >
-                  <Plus className="w-4 h-4 mr-1" />
+                  <Plus className="w-3.5 h-3.5 md:w-4 md:h-4 mr-1" />
                   Tambah
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-lg max-h-[90vh] overflow-hidden flex flex-col">
+              <DialogContent className="max-w-lg max-h-[90vh] overflow-hidden flex flex-col mx-4 sm:mx-auto">
                 <DialogHeader>
-                  <DialogTitle className="font-heading">Tambah Catatan Kegiatan</DialogTitle>
+                  <DialogTitle className="font-heading text-base md:text-lg">Tambah Catatan Kegiatan</DialogTitle>
                 </DialogHeader>
                 <ScrollArea className="flex-1 pr-4">
-                  <div className="space-y-6 py-4">
+                  <div className="space-y-5 py-4">
                     {/* Patient Selection */}
                     <div className="space-y-2">
-                      <Label>Pilih Pasien *</Label>
+                      <Label className="text-sm font-medium">Pilih Pasien *</Label>
                       <Popover open={patientSearchOpen} onOpenChange={setPatientSearchOpen}>
                         <PopoverTrigger asChild>
                           <Button
@@ -434,7 +449,7 @@ const InputLogbookPage = () => {
                             role="combobox"
                             aria-expanded={patientSearchOpen}
                             data-testid="btn-pilih-pasien"
-                            className="w-full justify-between h-12"
+                            className="w-full justify-between h-10 md:h-12 text-sm"
                           >
                             {selectedPatient 
                               ? `${selectedPatient.nama_pasien} (${selectedPatient.no_rm})`
@@ -484,7 +499,7 @@ const InputLogbookPage = () => {
                                       }`}
                                     />
                                     <div>
-                                      <p className="font-medium">{patient.nama_pasien}</p>
+                                      <p className="font-medium text-sm">{patient.nama_pasien}</p>
                                       <p className="text-xs text-slate-500">RM: {patient.no_rm}</p>
                                     </div>
                                   </CommandItem>
@@ -497,7 +512,7 @@ const InputLogbookPage = () => {
                       <Button 
                         variant="link" 
                         size="sm" 
-                        className="p-0 h-auto text-teal-600"
+                        className="p-0 h-auto text-teal-600 text-xs"
                         onClick={() => setShowPatientModal(true)}
                       >
                         <Plus className="w-3 h-3 mr-1" />
@@ -506,22 +521,48 @@ const InputLogbookPage = () => {
                     </div>
 
                     {/* Status Pasien */}
-                    <div className="space-y-3">
-                      <Label>Status Pasien *</Label>
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium">Status Pasien *</Label>
                       <RadioGroup
                         value={tindakanForm.jenis_pasien}
                         onValueChange={(v) => setTindakanForm({...tindakanForm, jenis_pasien: v})}
-                        className="flex flex-wrap gap-4"
+                        className="flex flex-wrap gap-3"
                       >
                         {STATUS_PASIEN_OPTIONS.map((option) => (
                           <div key={option.value} className="flex items-center space-x-2">
                             <RadioGroupItem 
                               value={option.value} 
-                              id={option.value}
+                              id={`status-${option.value}`}
                               data-testid={`radio-${option.value.toLowerCase()}`}
                             />
                             <Label 
-                              htmlFor={option.value} 
+                              htmlFor={`status-${option.value}`} 
+                              className="text-sm cursor-pointer font-normal"
+                            >
+                              {option.label}
+                            </Label>
+                          </div>
+                        ))}
+                      </RadioGroup>
+                    </div>
+
+                    {/* KETERGANTUNGAN - NEW FIELD */}
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium">Ketergantungan *</Label>
+                      <RadioGroup
+                        value={tindakanForm.ketergantungan}
+                        onValueChange={(v) => setTindakanForm({...tindakanForm, ketergantungan: v})}
+                        className="flex flex-wrap gap-3"
+                      >
+                        {KETERGANTUNGAN_OPTIONS.map((option) => (
+                          <div key={option.value} className="flex items-center space-x-2">
+                            <RadioGroupItem 
+                              value={option.value} 
+                              id={`ketergantungan-${option.value}`}
+                              data-testid={`radio-${option.value.toLowerCase()}`}
+                            />
+                            <Label 
+                              htmlFor={`ketergantungan-${option.value}`} 
                               className="text-sm cursor-pointer font-normal"
                             >
                               {option.label}
@@ -532,9 +573,9 @@ const InputLogbookPage = () => {
                     </div>
 
                     {/* Keterangan Checkboxes */}
-                    <div className="space-y-3">
-                      <Label>Keterangan Tindakan</Label>
-                      <div className="grid gap-2 max-h-48 overflow-y-auto p-3 bg-slate-50 rounded-xl">
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium">Keterangan Tindakan</Label>
+                      <div className="grid gap-2 max-h-40 overflow-y-auto p-3 bg-slate-50 rounded-xl">
                         {KETERANGAN_OPTIONS.map((option, idx) => (
                           <div key={idx} className="flex items-start space-x-2">
                             <Checkbox
@@ -542,10 +583,11 @@ const InputLogbookPage = () => {
                               checked={tindakanForm.keterangan_tindakan.includes(option)}
                               onCheckedChange={() => toggleKeterangan(option)}
                               data-testid={`checkbox-keterangan-${idx}`}
+                              className="mt-0.5"
                             />
                             <label 
                               htmlFor={`ket-${idx}`}
-                              className="text-sm text-slate-700 leading-tight cursor-pointer"
+                              className="text-xs text-slate-700 leading-tight cursor-pointer"
                             >
                               {option}
                             </label>
@@ -556,27 +598,28 @@ const InputLogbookPage = () => {
 
                     {/* Catatan Lainnya */}
                     <div className="space-y-2">
-                      <Label htmlFor="catatan">Yang Lain (Catatan Tambahan)</Label>
+                      <Label htmlFor="catatan" className="text-sm font-medium">Yang Lain (Catatan Tambahan)</Label>
                       <Textarea
                         id="catatan"
                         placeholder="Tuliskan catatan tambahan jika ada..."
                         value={tindakanForm.catatan_lainnya}
                         onChange={(e) => setTindakanForm({...tindakanForm, catatan_lainnya: e.target.value})}
                         data-testid="textarea-catatan"
-                        className="min-h-[80px]"
+                        className="min-h-[60px] text-sm"
                       />
                     </div>
 
-                    {/* Toggle Switches - 13 items */}
-                    <div className="space-y-3">
-                      <Label>Tindakan Spesifik</Label>
-                      <div className="grid gap-3">
-                        {TINDAKAN_TOGGLES.map((toggle) => (
+                    {/* Toggle Switches - 13 items EXACTLY */}
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium">Tindakan Spesifik (13 Item)</Label>
+                      <div className="grid gap-2">
+                        {TINDAKAN_TOGGLES.map((toggle, idx) => (
                           <div 
                             key={toggle.key}
-                            className="flex items-center justify-between p-3 bg-slate-50 rounded-xl"
+                            className="flex items-center justify-between p-2.5 bg-slate-50 rounded-lg"
                           >
-                            <Label htmlFor={toggle.key} className="text-sm cursor-pointer">
+                            <Label htmlFor={toggle.key} className="text-xs md:text-sm cursor-pointer flex-1">
+                              <span className="text-slate-400 mr-2">{idx + 1}.</span>
                               {toggle.label}
                             </Label>
                             <Switch
@@ -594,17 +637,18 @@ const InputLogbookPage = () => {
                     </div>
                   </div>
                 </ScrollArea>
-                <DialogFooter className="mt-4">
+                <DialogFooter className="mt-4 gap-2">
                   <Button 
                     variant="outline" 
                     onClick={() => setShowAddModal(false)}
+                    className="flex-1 sm:flex-none"
                   >
                     Batal
                   </Button>
                   <Button 
                     onClick={handleAddTindakan}
                     data-testid="btn-simpan-tindakan"
-                    className="bg-teal-600 hover:bg-teal-700"
+                    className="bg-teal-600 hover:bg-teal-700 flex-1 sm:flex-none"
                   >
                     Simpan Catatan
                   </Button>
@@ -616,45 +660,50 @@ const InputLogbookPage = () => {
         <CardContent>
           {(!logbook?.daftar_tindakan || logbook.daftar_tindakan.length === 0) ? (
             <div className="text-center py-8 text-slate-400">
-              <User className="w-12 h-12 mx-auto mb-2 opacity-50" />
-              <p>Belum ada catatan kegiatan</p>
-              <p className="text-sm">Klik "Tambah" untuk menambahkan catatan kegiatan</p>
+              <User className="w-10 h-10 md:w-12 md:h-12 mx-auto mb-2 opacity-50" />
+              <p className="text-sm">Belum ada catatan kegiatan</p>
+              <p className="text-xs mt-1">Klik "Tambah" untuk menambahkan catatan</p>
             </div>
           ) : (
             <div className="space-y-3">
               {logbook.daftar_tindakan.map((tindakan, idx) => (
                 <div 
                   key={idx}
-                  className="p-4 bg-slate-50 rounded-xl border border-slate-100"
+                  className="p-3 md:p-4 bg-slate-50 rounded-xl border border-slate-100"
                 >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <h4 className="font-semibold text-slate-900">{tindakan.nama_pasien}</h4>
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap mb-1">
+                        <h4 className="font-semibold text-slate-900 text-sm md:text-base">{tindakan.nama_pasien}</h4>
                         {getJenisPasienBadge(tindakan.jenis_pasien)}
+                        {tindakan.ketergantungan && (
+                          <Badge className="bg-purple-50 text-purple-700 border-purple-200 border text-xs">
+                            {getKetergantunganLabel(tindakan.ketergantungan)}
+                          </Badge>
+                        )}
                       </div>
-                      <p className="text-sm text-slate-500">
+                      <p className="text-xs md:text-sm text-slate-500">
                         RM: {tindakan.no_rm} {tindakan.no_billing && `| Billing: ${tindakan.no_billing}`}
                       </p>
                       {tindakan.diagnosa && (
-                        <p className="text-sm text-slate-600 mt-1">Dx: {tindakan.diagnosa}</p>
+                        <p className="text-xs md:text-sm text-slate-600 mt-1">Dx: {tindakan.diagnosa}</p>
                       )}
                       {tindakan.keterangan_tindakan?.length > 0 && (
                         <div className="mt-2">
                           <p className="text-xs text-slate-500 mb-1">Keterangan:</p>
-                          <p className="text-sm text-slate-700">
+                          <p className="text-xs md:text-sm text-slate-700 leading-relaxed">
                             {tindakan.keterangan_tindakan.join(', ')}
                           </p>
                         </div>
                       )}
                       {tindakan.catatan_lainnya && (
-                        <p className="text-sm text-slate-600 mt-1 italic">
+                        <p className="text-xs md:text-sm text-slate-600 mt-1 italic">
                           Catatan: {tindakan.catatan_lainnya}
                         </p>
                       )}
                       <div className="flex flex-wrap gap-1 mt-2">
                         {TINDAKAN_TOGGLES.filter(t => tindakan[t.key]).map(t => (
-                          <Badge key={t.key} variant="secondary" className="text-xs bg-teal-50 text-teal-700">
+                          <Badge key={t.key} variant="secondary" className="text-[10px] md:text-xs bg-teal-50 text-teal-700">
                             {t.label}
                           </Badge>
                         ))}
@@ -665,7 +714,7 @@ const InputLogbookPage = () => {
                       size="icon"
                       onClick={() => handleDeleteTindakan(idx)}
                       data-testid={`btn-delete-tindakan-${idx}`}
-                      className="text-slate-400 hover:text-red-500"
+                      className="text-slate-400 hover:text-red-500 h-8 w-8 shrink-0"
                     >
                       <Trash2 className="w-4 h-4" />
                     </Button>
@@ -679,43 +728,43 @@ const InputLogbookPage = () => {
 
       {/* Add Patient Modal */}
       <Dialog open={showPatientModal} onOpenChange={setShowPatientModal}>
-        <DialogContent>
+        <DialogContent className="mx-4 sm:mx-auto">
           <DialogHeader>
             <DialogTitle className="font-heading">Tambah Pasien Baru</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="nama_pasien">Nama Pasien *</Label>
+              <Label htmlFor="nama_pasien" className="text-sm">Nama Pasien *</Label>
               <Input
                 id="nama_pasien"
                 value={newPatient.nama_pasien}
                 onChange={(e) => setNewPatient({...newPatient, nama_pasien: e.target.value})}
                 data-testid="input-nama-pasien-baru"
-                className="h-12"
+                className="h-10 md:h-12"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="no_rm">No. RM *</Label>
+              <Label htmlFor="no_rm" className="text-sm">No. RM *</Label>
               <Input
                 id="no_rm"
                 value={newPatient.no_rm}
                 onChange={(e) => setNewPatient({...newPatient, no_rm: e.target.value})}
                 data-testid="input-no-rm-baru"
-                className="h-12"
+                className="h-10 md:h-12"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="no_billing">No. Billing</Label>
+              <Label htmlFor="no_billing" className="text-sm">No. Billing</Label>
               <Input
                 id="no_billing"
                 value={newPatient.no_billing}
                 onChange={(e) => setNewPatient({...newPatient, no_billing: e.target.value})}
                 data-testid="input-no-billing-baru"
-                className="h-12"
+                className="h-10 md:h-12"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="diagnosa">Diagnosa</Label>
+              <Label htmlFor="diagnosa" className="text-sm">Diagnosa</Label>
               <Textarea
                 id="diagnosa"
                 value={newPatient.diagnosa}
@@ -724,7 +773,7 @@ const InputLogbookPage = () => {
               />
             </div>
           </div>
-          <DialogFooter>
+          <DialogFooter className="gap-2">
             <Button variant="outline" onClick={() => setShowPatientModal(false)}>
               Batal
             </Button>
