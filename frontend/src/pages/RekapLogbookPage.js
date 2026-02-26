@@ -39,10 +39,10 @@ const MONTHS = [
   { value: 12, label: 'Desember' },
 ];
 
-const JENIS_PASIEN_LABELS = {
-  'PASIEN_BARU': 'BARU',
-  'PASIEN_LAMA': 'LAMA',
-  'PASIEN_PULANG': 'PULANG'
+const KETERGANTUNGAN_LABELS = {
+  'ADL_SELF_CARE': 'Self Care',
+  'ADL_PARTIAL_CARE': 'Partial Care',
+  'ADL_TOTAL_CARE': 'Total Care'
 };
 
 const RekapLogbookPage = () => {
