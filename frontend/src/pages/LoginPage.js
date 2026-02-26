@@ -1,11 +1,14 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Button } from '../components/ui/button';
 import { Card, CardContent } from '../components/ui/card';
-import { Stethoscope, Shield, Clock, FileText } from 'lucide-react';
+import { Stethoscope, Shield, Clock, FileText, UserCog, User, Loader2 } from 'lucide-react';
 
 const LoginPage = () => {
-  const { login, loading } = useAuth();
+  const { login, demoLogin, loading } = useAuth();
+  const navigate = useNavigate();
+  const [demoLoading, setDemoLoading] = useState(null);
 
   const features = [
     {
@@ -24,6 +27,28 @@ const LoginPage = () => {
       description: "Data tersimpan dengan enkripsi"
     }
   ];
+
+  const handleDemoLogin = async (type) => {
+    setDemoLoading(type);
+    try {
+      const credentials = type === 'admin' 
+        ? { email: 'admin@demo.com', password: 'password' }
+        : { email: 'user@demo.com', password: 'password' };
+      
+      const user = await demoLogin(credentials.email, credentials.password);
+      
+      // Redirect based on role
+      if (user.role === 'ADMIN') {
+        navigate('/admin', { state: { user }, replace: true });
+      } else {
+        navigate('/dashboard', { state: { user }, replace: true });
+      }
+    } catch (error) {
+      console.error('Demo login failed:', error);
+    } finally {
+      setDemoLoading(null);
+    }
+  };
 
   return (
     <div className="min-h-screen mesh-gradient flex flex-col">
@@ -72,9 +97,10 @@ const LoginPage = () => {
                 </p>
               </div>
 
+              {/* Primary: Google Login */}
               <Button 
                 onClick={login}
-                disabled={loading}
+                disabled={loading || demoLoading}
                 data-testid="login-google-btn"
                 className="w-full h-12 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-xl font-medium transition-all hover:shadow-md active:scale-[0.98]"
               >
@@ -86,6 +112,48 @@ const LoginPage = () => {
                 </svg>
                 Masuk dengan Google
               </Button>
+
+              {/* Divider */}
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t border-slate-200" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-white px-2 text-slate-400">Quick Test</span>
+                </div>
+              </div>
+
+              {/* Demo Login Buttons */}
+              <div className="grid grid-cols-2 gap-3">
+                <Button 
+                  onClick={() => handleDemoLogin('admin')}
+                  disabled={loading || demoLoading}
+                  data-testid="login-demo-admin-btn"
+                  variant="outline"
+                  className="h-12 border-teal-200 hover:bg-teal-50 hover:border-teal-300 rounded-xl font-medium transition-all"
+                >
+                  {demoLoading === 'admin' ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <UserCog className="w-4 h-4 mr-2 text-teal-600" />
+                  )}
+                  <span className="text-sm">Demo Admin</span>
+                </Button>
+                <Button 
+                  onClick={() => handleDemoLogin('user')}
+                  disabled={loading || demoLoading}
+                  data-testid="login-demo-user-btn"
+                  variant="outline"
+                  className="h-12 border-orange-200 hover:bg-orange-50 hover:border-orange-300 rounded-xl font-medium transition-all"
+                >
+                  {demoLoading === 'user' ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <User className="w-4 h-4 mr-2 text-orange-500" />
+                  )}
+                  <span className="text-sm">Demo User</span>
+                </Button>
+              </div>
 
               <p className="text-xs text-center text-slate-400">
                 Dengan masuk, Anda menyetujui Syarat & Ketentuan kami
