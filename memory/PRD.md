@@ -104,7 +104,6 @@ Building "SepulangDinas" - a SaaS platform for Indonesian hospital nurses to aut
 - [ ] PWA manifest and service worker for installability
 - [ ] Export PDF/CSV functionality for Rekap Logbook
 - [ ] Admin ticket reply and close functionality
-- [ ] e-Remunerasi engine refinement (combine checkboxes to comma-separated string)
 
 ### P2 (Nice to Have)
 - [ ] Real Midtrans payment integration
