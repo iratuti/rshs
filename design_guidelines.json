@@ -1,0 +1,143 @@
+{
+  "design_system": {
+    "identity": {
+      "name": "SepulangDinas",
+      "tone": "Comforting, Efficient, Professional, Trustworthy",
+      "aesthetic": "Soft Clinical / Modern Wellness",
+      "description": "A mobile-first SaaS for nurses that feels like a relief, not a chore. Clean lines, soft colors, and generous spacing to reduce cognitive load after long shifts."
+    },
+    "typography": {
+      "font_family": {
+        "heading": "Nunito, sans-serif",
+        "body": "Inter, sans-serif",
+        "mono": "JetBrains Mono, monospace"
+      },
+      "scale": {
+        "h1": "text-4xl font-bold tracking-tight text-slate-900",
+        "h2": "text-3xl font-semibold tracking-tight text-slate-900",
+        "h3": "text-2xl font-semibold text-slate-800",
+        "body_lg": "text-lg font-medium text-slate-700 leading-relaxed",
+        "body_base": "text-base font-normal text-slate-600 leading-relaxed",
+        "caption": "text-sm font-medium text-slate-500",
+        "label": "text-xs font-bold uppercase tracking-wider text-slate-400"
+      },
+      "imports": [
+        "@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Nunito:wght@400;600;700;800&display=swap');"
+      ]
+    },
+    "colors": {
+      "palette": {
+        "primary": {
+          "DEFAULT": "#0D9488", 
+          "foreground": "#FFFFFF",
+          "hover": "#0F766E",
+          "description": "Teal-600: Healing, professional, calm. Use for main actions."
+        },
+        "secondary": {
+          "DEFAULT": "#F97316",
+          "foreground": "#FFFFFF",
+          "hover": "#EA580C",
+          "description": "Orange-500: Warmth, energy, urgent actions. Use for 'Generate' or 'Urgent'."
+        },
+        "accent": {
+          "DEFAULT": "#F0FDFA",
+          "foreground": "#0D9488",
+          "description": "Teal-50: Very soft background for active states or cards."
+        },
+        "background": {
+          "DEFAULT": "#F8FAFC",
+          "paper": "#FFFFFF",
+          "dark": "#0F172A"
+        },
+        "muted": {
+          "DEFAULT": "#F1F5F9",
+          "foreground": "#64748B"
+        },
+        "border": "#E2E8F0",
+        "input": "#E2E8F0",
+        "ring": "#0D9488"
+      },
+      "semantic": {
+        "success": "#10B981",
+        "warning": "#F59E0B",
+        "error": "#EF4444",
+        "info": "#3B82F6"
+      }
+    },
+    "layout": {
+      "spacing_scale": "px-4 py-3 md:px-6 md:py-4",
+      "container": "max-w-md mx-auto md:max-w-4xl lg:max-w-7xl",
+      "radius": {
+        "default": "rounded-xl",
+        "button": "rounded-full",
+        "card": "rounded-2xl"
+      },
+      "shadows": {
+        "card": "shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.08)] transition-all duration-300",
+        "float": "shadow-[0_8px_30px_rgba(0,0,0,0.12)]"
+      }
+    },
+    "components": {
+      "buttons": {
+        "primary": "bg-primary text-white hover:bg-primary/90 shadow-sm transition-transform active:scale-95",
+        "secondary": "bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 hover:text-slate-900 transition-colors",
+        "ghost": "hover:bg-slate-100 text-slate-600 hover:text-slate-900",
+        "destructive": "bg-red-50 text-red-600 hover:bg-red-100 border border-red-200"
+      },
+      "inputs": {
+        "default": "bg-white border-slate-200 text-slate-900 placeholder:text-slate-400 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all rounded-lg h-12"
+      },
+      "cards": {
+        "base": "bg-white rounded-2xl border border-slate-100 shadow-sm p-6 relative overflow-hidden",
+        "interactive": "cursor-pointer hover:border-primary/30 transition-all"
+      },
+      "badges": {
+        "default": "bg-slate-100 text-slate-700 rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wider",
+        "success": "bg-emerald-50 text-emerald-700 border border-emerald-100",
+        "warning": "bg-amber-50 text-amber-700 border border-amber-100"
+      }
+    },
+    "visual_enhancers": {
+      "glass": "backdrop-blur-md bg-white/70 border-b border-white/20 shadow-sm",
+      "gradient_text": "bg-clip-text text-transparent bg-gradient-to-r from-teal-600 to-emerald-600",
+      "mesh_gradient": "bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-teal-50 via-slate-50 to-white"
+    },
+    "assets": {
+      "icons": "lucide-react",
+      "images": {
+        "login_hero": "https://images.unsplash.com/photo-1770134223774-13b735e29201?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDk1Nzd8MHwxfHNlYXJjaHwxfHxJbmRvbmVzaWFuJTIwbnVyc2UlMjBob3NwaXRhbCUyMHNtaWxlJTIwcHJvZmVzc2lvbmFsfGVufDB8fHx8MTc3MjA3MzE1N3ww&ixlib=rb-4.1.0&q=85",
+        "abstract_bg": "https://images.unsplash.com/photo-1661027983364-c4d90671b1d9?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NTYxOTJ8MHwxfHNlYXJjaHwxfHxtaW5pbWFsaXN0JTIwbWVkaWNhbCUyMGFic3RyYWN0JTIwYmFja2dyb3VuZCUyMHNvZnQlMjBibHVlfGVufDB8fHx8MTc3MjA3MzE1N3ww&ixlib=rb-4.1.0&q=85",
+        "logo_placeholder": "https://via.placeholder.com/150x50?text=SepulangDinas"
+      }
+    },
+    "accessibility": {
+      "contrast_check": "Ensure text is slate-600 or darker on white backgrounds.",
+      "touch_targets": "Minimum 44x44px for all interactive elements (Mobile First).",
+      "focus_states": "Visible ring-2 ring-primary/50 offset-2."
+    },
+    "animations": {
+      "micro_interactions": "hover:scale-[1.02] active:scale-[0.98] transition-transform duration-200",
+      "page_transition": "animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out",
+      "stagger": "stagger-100"
+    }
+  },
+  "instructions_to_main_agent": [
+    "1. UPDATE TAILWIND CONFIG: Add the custom colors (Teal/Orange) and extend the borderRadius to 'xl', '2xl'.",
+    "2. FONT SETUP: Import Nunito and Inter in index.css. Set Nunito for headings and Inter for body.",
+    "3. MOBILE FIRST: Always design for mobile view first (PWA). Use 'hidden md:block' for desktop-only elements.",
+    "4. COMPONENTS: Use Shadcn UI as base but apply the 'rounded-2xl' and 'shadow-sm' styles defined in design_system.components.",
+    "5. NAVIGATION: Implement a Bottom Navigation Bar for mobile views (Home, Logbook, Reports, Profile). Sidebar for Desktop.",
+    "6. FORMS: Use large inputs (h-12) and clear labels. Group related fields in 'Card' containers.",
+    "7. EXPORT: Use named exports for components, default for pages.",
+    "8. TOASTS: Use 'sonner' for notifications.",
+    "9. IMAGES: Use the provided Unsplash URLs for login/hero sections.",
+    "10. DATA-TESTID: Add data-testid to all interactive elements."
+  ],
+  "universal_guidelines": [
+    "Avoid gradients for backgrounds unless very subtle.",
+    "Don't center everything. Left align text for readability.",
+    "Use generous padding (p-6, p-8) inside cards.",
+    "Never use pure black (#000000). Use Slate-900 (#0F172A).",
+    "Ensure all buttons have loading states."
+  ]
+}
