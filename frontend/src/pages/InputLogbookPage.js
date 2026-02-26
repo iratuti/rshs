@@ -636,8 +636,8 @@ const InputLogbookPage = () => {
                       </div>
                     </div>
                   </div>
-                </ScrollArea>
-                <DialogFooter className="mt-4 gap-2">
+                </div>
+                <DialogFooter className="p-4 pt-2 shrink-0 border-t gap-2">
                   <Button 
                     variant="outline" 
                     onClick={() => setShowAddModal(false)}
