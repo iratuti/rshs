@@ -99,17 +99,18 @@ Building "SepulangDinas" - a SaaS platform for Indonesian hospital nurses to aut
 - [x] Toast notifications with sonner
 - [x] Full-width layout on desktop
 
-## Test Report Summary (Feb 26, 2024)
-- **Success Rate**: 100% (11/11 features passed)
-- **Test File**: /app/test_reports/iteration_3.json
+## Test Report Summary (Feb 26, 2024 - Iteration 4)
+- **Success Rate**: 100% (All features passed)
+- **Test File**: /app/test_reports/iteration_4.json
 - **Key Features Verified**:
-  - Demo login redirects working
-  - Mobile hamburger menu with separate Logout
-  - Modal with Status Pasien, Ketergantungan, and 13 toggles
-  - e-Kinerja sub-point splitting (22 sub-points)
-  - e-Remunerasi two modes
-  - Rekap Logbook spreadsheet view
-  - Desktop sidebar and mobile bottom nav
+  - Input Logbook date-driven flow working
+  - No-shift warning shown, patient list hidden when no shift
+  - View/Edit/Delete buttons functional
+  - Edit modal pre-fills all data correctly
+  - Rekap Logbook KETERGANTUNGAN shows ADL values (Partial Care, etc.)
+  - e-Kinerja dual view mode working
+  - Points 6, 7, 8 generating correct sub-lines
+  - 38 individual copy buttons for sub-points
 
 ## Prioritized Backlog
 
