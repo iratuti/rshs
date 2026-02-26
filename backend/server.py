@@ -145,6 +145,22 @@ class TicketCreate(BaseModel):
 class TicketReply(BaseModel):
     balasan_admin: str
 
+# ==================== DEMO ACCOUNTS ====================
+DEMO_ACCOUNTS = {
+    "admin@demo.com": {
+        "password": "password",
+        "name": "Demo Admin",
+        "role": "ADMIN",
+        "picture": "https://ui-avatars.com/api/?name=Demo+Admin&background=0d9488&color=fff"
+    },
+    "user@demo.com": {
+        "password": "password", 
+        "name": "Demo User",
+        "role": "USER",
+        "picture": "https://ui-avatars.com/api/?name=Demo+User&background=f97316&color=fff"
+    }
+}
+
 # ==================== AUTH HELPERS ====================
 async def get_session_from_cookie(request: Request) -> Optional[dict]:
     session_token = request.cookies.get("session_token")
@@ -285,6 +301,80 @@ async def get_me(request: Request):
     """Get current authenticated user"""
     user = await get_current_user(request)
     return user.model_dump()
+
+class DemoLoginRequest(BaseModel):
+    email: str
+    password: str
+
+@api_router.post("/auth/demo-login")
+async def demo_login(login_data: DemoLoginRequest, response: Response):
+    """Login with demo credentials"""
+    email = login_data.email
+    password = login_data.password
+    
+    # Check if demo account exists
+    if email not in DEMO_ACCOUNTS:
+        raise HTTPException(status_code=401, detail="Invalid demo credentials")
+    
+    demo_account = DEMO_ACCOUNTS[email]
+    
+    # Verify password
+    if password != demo_account["password"]:
+        raise HTTPException(status_code=401, detail="Invalid demo credentials")
+    
+    # Check if user exists in DB
+    existing_user = await db.users.find_one({"email": email}, {"_id": 0})
+    
+    if existing_user:
+        user_id = existing_user["user_id"]
+    else:
+        # Create demo user
+        user_id = f"demo_{uuid.uuid4().hex[:12]}"
+        trial_end = datetime.now(timezone.utc) + timedelta(days=30)  # Demo gets 30 days
+        
+        new_user = {
+            "user_id": user_id,
+            "name": demo_account["name"],
+            "email": email,
+            "picture": demo_account["picture"],
+            "ruangan_rs": "Demo Ruangan",
+            "role": demo_account["role"],
+            "status_langganan": SubscriptionStatus.ACTIVE.value,  # Demo is always active
+            "berlaku_sampai": trial_end.isoformat(),
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        await db.users.insert_one(new_user)
+    
+    # Create session token
+    session_token = f"demo_session_{uuid.uuid4().hex}"
+    expires_at = datetime.now(timezone.utc) + timedelta(days=7)
+    
+    await db.user_sessions.update_one(
+        {"user_id": user_id},
+        {"$set": {
+            "user_id": user_id,
+            "session_token": session_token,
+            "expires_at": expires_at.isoformat(),
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }},
+        upsert=True
+    )
+    
+    # Get user data
+    user_doc = await db.users.find_one({"user_id": user_id}, {"_id": 0})
+    
+    # Set cookie
+    response.set_cookie(
+        key="session_token",
+        value=session_token,
+        httponly=True,
+        secure=True,
+        samesite="none",
+        path="/",
+        max_age=7 * 24 * 60 * 60
+    )
+    
+    return {"user": user_doc, "session_token": session_token}
 
 @api_router.post("/auth/logout")
 async def logout(request: Request, response: Response):
