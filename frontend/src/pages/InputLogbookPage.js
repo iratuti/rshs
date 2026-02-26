@@ -433,11 +433,11 @@ const InputLogbookPage = () => {
                   Tambah
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-lg max-h-[90vh] overflow-hidden flex flex-col mx-4 sm:mx-auto">
-                <DialogHeader>
+              <DialogContent className="max-w-lg max-h-[85vh] flex flex-col mx-4 sm:mx-auto p-0">
+                <DialogHeader className="p-4 pb-2 shrink-0">
                   <DialogTitle className="font-heading text-base md:text-lg">Tambah Catatan Kegiatan</DialogTitle>
                 </DialogHeader>
-                <ScrollArea className="flex-1 pr-4">
+                <div className="flex-1 overflow-y-auto px-4">
                   <div className="space-y-5 py-4">
                     {/* Patient Selection */}
                     <div className="space-y-2">
