@@ -1,53 +1,86 @@
-import { useEffect } from "react";
-import "@/App.css";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import axios from "axios";
+import React from 'react';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { AuthProvider } from './contexts/AuthContext';
+import { ProtectedRoute } from './components/ProtectedRoute';
+import { DashboardLayout } from './components/layout/DashboardLayout';
+import { Toaster } from './components/ui/sonner';
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-const API = `${BACKEND_URL}/api`;
+// Pages
+import LoginPage from './pages/LoginPage';
+import AuthCallback from './pages/AuthCallback';
+import InputLogbookPage from './pages/InputLogbookPage';
+import GeneratorLaporanPage from './pages/GeneratorLaporanPage';
+import RekapLogbookPage from './pages/RekapLogbookPage';
+import BillingPage from './pages/BillingPage';
+import SupportPage from './pages/SupportPage';
+import ProfilePage from './pages/ProfilePage';
 
-const Home = () => {
-  const helloWorldApi = async () => {
-    try {
-      const response = await axios.get(`${API}/`);
-      console.log(response.data.message);
-    } catch (e) {
-      console.error(e, `errored out requesting / api`);
-    }
-  };
+// Admin Pages
+import AdminDashboardPage from './pages/admin/AdminDashboardPage';
+import AdminTicketsPage from './pages/admin/AdminTicketsPage';
+import AdminRevenuePage from './pages/admin/AdminRevenuePage';
 
-  useEffect(() => {
-    helloWorldApi();
-  }, []);
+// Router wrapper to handle OAuth callback
+const AppRouter = () => {
+  const location = useLocation();
+  
+  // Check URL fragment for session_id (OAuth callback)
+  // This must be synchronous during render to prevent race conditions
+  if (location.hash?.includes('session_id=')) {
+    return <AuthCallback />;
+  }
 
   return (
-    <div>
-      <header className="App-header">
-        <a
-          className="App-link"
-          href="https://emergent.sh"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <img src="https://avatars.githubusercontent.com/in/1201222?s=120&u=2686cf91179bbafbc7a71bfbc43004cf9ae1acea&v=4" />
-        </a>
-        <p className="mt-5">Building something incredible ~!</p>
-      </header>
-    </div>
+    <Routes>
+      {/* Public Routes */}
+      <Route path="/login" element={<LoginPage />} />
+      
+      {/* User Dashboard Routes */}
+      <Route
+        path="/dashboard"
+        element={
+          <ProtectedRoute>
+            <DashboardLayout />
+          </ProtectedRoute>
+        }
+      >
+        <Route index element={<InputLogbookPage />} />
+        <Route path="generator" element={<GeneratorLaporanPage />} />
+        <Route path="rekap" element={<RekapLogbookPage />} />
+        <Route path="billing" element={<BillingPage />} />
+        <Route path="support" element={<SupportPage />} />
+        <Route path="profile" element={<ProfilePage />} />
+      </Route>
+
+      {/* Admin Dashboard Routes */}
+      <Route
+        path="/admin"
+        element={
+          <ProtectedRoute requireAdmin>
+            <DashboardLayout isAdmin />
+          </ProtectedRoute>
+        }
+      >
+        <Route index element={<AdminDashboardPage />} />
+        <Route path="tickets" element={<AdminTicketsPage />} />
+        <Route path="revenue" element={<AdminRevenuePage />} />
+      </Route>
+
+      {/* Default Redirect */}
+      <Route path="/" element={<Navigate to="/login" replace />} />
+      <Route path="*" element={<Navigate to="/login" replace />} />
+    </Routes>
   );
 };
 
 function App() {
   return (
-    <div className="App">
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Home />}>
-            <Route index element={<Home />} />
-          </Route>
-        </Routes>
-      </BrowserRouter>
-    </div>
+    <BrowserRouter>
+      <AuthProvider>
+        <AppRouter />
+        <Toaster position="top-center" richColors />
+      </AuthProvider>
+    </BrowserRouter>
   );
 }
 
