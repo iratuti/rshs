@@ -311,9 +311,9 @@ const RekapLogbookPage = () => {
                   <td className="border border-slate-300 px-2 py-2 text-slate-600">{row.diagnosa}</td>
                   <td className="border border-slate-300 px-2 py-2 text-center">
                     <span className={`px-2 py-1 rounded text-xs font-medium ${
-                      row.ketergantungan === 'BARU' ? 'bg-emerald-100 text-emerald-700' :
-                      row.ketergantungan === 'PULANG' ? 'bg-orange-100 text-orange-700' :
-                      'bg-slate-100 text-slate-600'
+                      row.ketergantungan === 'Self Care' ? 'bg-emerald-100 text-emerald-700' :
+                      row.ketergantungan === 'Total Care' ? 'bg-red-100 text-red-700' :
+                      'bg-amber-100 text-amber-700'
                     }`}>
                       {row.ketergantungan}
                     </span>
