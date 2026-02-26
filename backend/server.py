@@ -328,7 +328,7 @@ async def get_patients(request: Request):
     ).sort("nama_pasien", 1).to_list(1000)
     return patients
 
-@api_router.post("/patients", response_model=Patient)
+@api_router.post("/patients", response_model=Patient, status_code=201)
 async def create_patient(patient_data: PatientCreate, request: Request):
     """Create a new patient"""
     user = await get_current_user(request)
@@ -422,7 +422,7 @@ async def get_today_logbook(request: Request):
     
     return logbook
 
-@api_router.post("/logbooks", response_model=Logbook)
+@api_router.post("/logbooks", response_model=Logbook, status_code=201)
 async def create_logbook(logbook_data: LogbookCreate, request: Request):
     """Create a new logbook entry"""
     user = await get_current_user(request)
@@ -511,7 +511,7 @@ async def get_user_tickets(request: Request):
     ).sort("created_at", -1).to_list(100)
     return tickets
 
-@api_router.post("/tickets", response_model=Ticket)
+@api_router.post("/tickets", response_model=Ticket, status_code=201)
 async def create_ticket(ticket_data: TicketCreate, request: Request):
     """Create a new support ticket"""
     user = await get_current_user(request)
