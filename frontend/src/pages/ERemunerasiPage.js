@@ -287,14 +287,14 @@ const ERemunerasiPage = () => {
         </TabsContent>
         
         {/* Mode 2: Tampilan Per Tanggal (By Point & Month) */}
-        <TabsContent value="per-tanggal" className="mt-4 space-y-4">
+        <TabsContent value="per-tanggal" className="mt-4 space-y-3 md:space-y-4">
           <Card className="border-0 shadow-card bg-white">
-            <CardContent className="p-4">
-              <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 items-end">
-                <div className="space-y-2">
-                  <Label>Bulan</Label>
+            <CardContent className="p-3 md:p-4">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 md:gap-4 items-end">
+                <div className="space-y-1.5">
+                  <Label className="text-xs md:text-sm">Bulan</Label>
                   <Select value={selectedMonth.toString()} onValueChange={(v) => setSelectedMonth(parseInt(v))}>
-                    <SelectTrigger data-testid="select-month" className="h-12">
+                    <SelectTrigger data-testid="select-month" className="h-10 md:h-12 text-sm">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -306,10 +306,10 @@ const ERemunerasiPage = () => {
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-2">
-                  <Label>Tahun</Label>
+                <div className="space-y-1.5">
+                  <Label className="text-xs md:text-sm">Tahun</Label>
                   <Select value={selectedYear.toString()} onValueChange={(v) => setSelectedYear(parseInt(v))}>
-                    <SelectTrigger data-testid="select-year" className="h-12">
+                    <SelectTrigger data-testid="select-year" className="h-10 md:h-12 text-sm">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -321,10 +321,10 @@ const ERemunerasiPage = () => {
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-2">
-                  <Label>Point</Label>
+                <div className="space-y-1.5">
+                  <Label className="text-xs md:text-sm">Point</Label>
                   <Select value={selectedPoint} onValueChange={setSelectedPoint}>
-                    <SelectTrigger data-testid="select-point" className="h-12">
+                    <SelectTrigger data-testid="select-point" className="h-10 md:h-12 text-sm">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -340,14 +340,14 @@ const ERemunerasiPage = () => {
                   onClick={fetchMonthlyLogbooks}
                   disabled={loading}
                   data-testid="btn-generate-tanggal"
-                  className="h-12 bg-teal-600 hover:bg-teal-700"
+                  className="h-10 md:h-12 bg-teal-600 hover:bg-teal-700"
                 >
                   {loading ? (
-                    <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                    <RefreshCw className="w-4 h-4 md:mr-2 animate-spin" />
                   ) : (
-                    <ClipboardList className="w-4 h-4 mr-2" />
+                    <ClipboardList className="w-4 h-4 md:mr-2" />
                   )}
-                  Generate
+                  <span className="hidden md:inline">Generate</span>
                 </Button>
               </div>
             </CardContent>
