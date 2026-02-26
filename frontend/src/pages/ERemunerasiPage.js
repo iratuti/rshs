@@ -355,8 +355,8 @@ const ERemunerasiPage = () => {
 
           {/* Monthly Data Table */}
           <Card className="border-0 shadow-card bg-white overflow-hidden">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg font-heading">
+            <CardHeader className="pb-2 md:pb-3 p-3 md:p-4">
+              <CardTitle className="text-sm md:text-lg font-heading">
                 Data Point {selectedPoint} - {MONTHS.find(m => m.value === selectedMonth)?.label} {selectedYear}
               </CardTitle>
             </CardHeader>
@@ -366,26 +366,26 @@ const ERemunerasiPage = () => {
                   <Table>
                     <TableHeader>
                       <TableRow className="bg-slate-50">
-                        <TableHead className="w-36">Tanggal</TableHead>
-                        <TableHead>Deskripsi Kegiatan</TableHead>
-                        <TableHead className="w-32 text-center">Jumlah Kegiatan</TableHead>
-                        <TableHead className="w-20">Aksi</TableHead>
+                        <TableHead className="w-28 md:w-36 text-xs md:text-sm">Tanggal</TableHead>
+                        <TableHead className="text-xs md:text-sm">Deskripsi Kegiatan</TableHead>
+                        <TableHead className="w-20 md:w-32 text-center text-xs md:text-sm">Jumlah</TableHead>
+                        <TableHead className="w-12 md:w-20 text-xs md:text-sm">Aksi</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {monthlyData.map((row, idx) => (
                         <TableRow key={idx}>
-                          <TableCell className="font-medium">
+                          <TableCell className="font-medium text-xs md:text-sm">
                             {new Date(row.tanggal).toLocaleDateString('id-ID', {
                               weekday: 'short',
                               day: 'numeric',
                               month: 'short'
                             })}
                           </TableCell>
-                          <TableCell className="text-sm text-slate-700 max-w-md">
+                          <TableCell className="text-xs md:text-sm text-slate-700 max-w-md">
                             <div className="line-clamp-2">{row.deskripsi}</div>
                           </TableCell>
-                          <TableCell className="text-center font-semibold text-teal-600">
+                          <TableCell className="text-center font-semibold text-teal-600 text-xs md:text-sm">
                             {row.jumlahKegiatan}
                           </TableCell>
                           <TableCell>
@@ -394,9 +394,9 @@ const ERemunerasiPage = () => {
                               size="icon"
                               onClick={() => copyToClipboard(row.deskripsi)}
                               data-testid={`btn-copy-row-${idx}`}
-                              className="h-8 w-8"
+                              className="h-7 w-7 md:h-8 md:w-8"
                             >
-                              <Copy className="w-4 h-4" />
+                              <Copy className="w-3.5 h-3.5 md:w-4 md:h-4" />
                             </Button>
                           </TableCell>
                         </TableRow>
@@ -405,9 +405,9 @@ const ERemunerasiPage = () => {
                   </Table>
                 </div>
               ) : (
-                <div className="p-12 text-center text-slate-400">
-                  <Calendar className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                  <p>Pilih filter dan klik "Generate" untuk menampilkan data</p>
+                <div className="p-8 md:p-12 text-center text-slate-400">
+                  <Calendar className="w-10 h-10 md:w-12 md:h-12 mx-auto mb-3 md:mb-4 opacity-50" />
+                  <p className="text-sm md:text-base">Pilih filter dan klik "Generate" untuk menampilkan data</p>
                 </div>
               )}
             </CardContent>
