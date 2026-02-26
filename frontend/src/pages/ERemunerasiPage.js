@@ -207,26 +207,26 @@ const ERemunerasiPage = () => {
         </TabsList>
         
         {/* Mode 1: Tampilan Per Nilai (By Date) */}
-        <TabsContent value="per-nilai" className="mt-4 space-y-4">
+        <TabsContent value="per-nilai" className="mt-4 space-y-3 md:space-y-4">
           <Card className="border-0 shadow-card bg-white">
-            <CardContent className="p-4">
-              <div className="flex flex-col sm:flex-row gap-4 items-end">
-                <div className="flex-1 space-y-2">
-                  <Label htmlFor="date-picker">Pilih Tanggal</Label>
+            <CardContent className="p-3 md:p-4">
+              <div className="flex flex-col sm:flex-row gap-3 sm:items-end">
+                <div className="flex-1 space-y-1.5">
+                  <Label htmlFor="date-picker" className="text-sm">Pilih Tanggal</Label>
                   <Input
                     id="date-picker"
                     type="date"
                     value={selectedDate}
                     onChange={(e) => setSelectedDate(e.target.value)}
                     data-testid="date-picker-nilai"
-                    className="h-12"
+                    className="h-10 md:h-12"
                   />
                 </div>
                 <Button
                   onClick={() => fetchLogbookByDate(selectedDate)}
                   disabled={loading}
                   data-testid="btn-generate-nilai"
-                  className="h-12 bg-teal-600 hover:bg-teal-700 px-8"
+                  className="h-10 md:h-12 bg-teal-600 hover:bg-teal-700 px-6 md:px-8"
                 >
                   {loading ? (
                     <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
