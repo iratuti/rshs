@@ -85,6 +85,11 @@ class JenisPasien(str, Enum):
     PASIEN_LAMA = "PASIEN_LAMA"
     PASIEN_PULANG = "PASIEN_PULANG"
 
+class Ketergantungan(str, Enum):
+    ADL_SELF_CARE = "ADL_SELF_CARE"
+    ADL_PARTIAL_CARE = "ADL_PARTIAL_CARE"
+    ADL_TOTAL_CARE = "ADL_TOTAL_CARE"
+
 class TindakanItem(BaseModel):
     patient_id: str
     nama_pasien: str
@@ -92,6 +97,7 @@ class TindakanItem(BaseModel):
     no_billing: Optional[str] = None
     diagnosa: Optional[str] = None
     jenis_pasien: JenisPasien = JenisPasien.PASIEN_LAMA
+    ketergantungan: Ketergantungan = Ketergantungan.ADL_PARTIAL_CARE
     keterangan_tindakan: List[str] = []
     catatan_lainnya: Optional[str] = None
     # 13 Toggle switches (exactly as specified)
