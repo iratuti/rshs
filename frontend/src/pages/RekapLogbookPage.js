@@ -143,7 +143,7 @@ const RekapLogbookPage = () => {
           noRM: tindakan.no_rm,
           noBilling: tindakan.no_billing || '-',
           diagnosa: tindakan.diagnosa || '-',
-          ketergantungan: JENIS_PASIEN_LABELS[tindakan.jenis_pasien] || '-',
+          ketergantungan: KETERGANTUNGAN_LABELS[tindakan.ketergantungan] || tindakan.ketergantungan || '-',
           keterangan: buildKeterangan(tindakan)
         });
       });
