@@ -41,13 +41,14 @@ Building "SepulangDinas" - a SaaS platform for Indonesian hospital nurses to aut
 ### Frontend (React)
 - [x] Login page with Demo buttons (user/admin)
 - [x] Dashboard layout with sidebar (desktop) and mobile header + bottom nav (mobile)
+- [x] **Modal Scrollable Fix** - Modal now has `max-h-[85vh] overflow-y-auto` for proper scrolling
 - [x] Input Logbook page with:
   - Shift info form (tanggal, shift, jam datang/pulang)
   - Add tindakan modal with patient search
   - Status Pasien radio group (Pasien Baru, Lama, Pulang)
   - Ketergantungan radio group (ADL Self Care, Partial Care, Total Care)
   - 15 keterangan checkboxes
-  - 13 toggle switches for specific actions
+  - 13 toggle switches for specific actions (NOW VISIBLE via scrolling)
   - Catatan lainnya textarea
 - [x] e-Kinerja page with:
   - Date picker for historical data
@@ -55,9 +56,15 @@ Building "SepulangDinas" - a SaaS platform for Indonesian hospital nurses to aut
   - Category badges (PASIEN BARU, PASIEN PULANG, SEMUA PASIEN, ABSENSI)
   - Individual copy buttons per sub-point
   - "Salin Semua" button
-- [x] e-Remunerasi page with:
+- [x] **e-Remunerasi page - LOGIC OVERHAULED** with:
   - Two modes: Per Nilai (by date) and Per Tanggal (by month/point)
-  - Point generator with copy functionality
+  - Exact 5-point format as per Indonesian hospital standard:
+    - Point 1: Asesmen Keperawatan
+    - Point 2: Fungsi Advokasi dan Kolaborasi DPJP
+    - Point 3: Dokumentasi Asuhan Rekam Medik
+    - Point 4: Tindakan Keperawatan (grouped by 13 specific actions)
+    - Point 5: Monitoring EWS
+  - Point 4 dynamically groups patients by specific actions performed
 - [x] Rekap Logbook page with:
   - Month/year filter
   - Spreadsheet-style table with all required columns
