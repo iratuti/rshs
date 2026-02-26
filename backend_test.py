@@ -160,7 +160,7 @@ class SepulangDinasAPITester:
         """Test support ticket operations"""
         # Create ticket
         ticket_data = {
-            "kategori": "TEKNIS",
+            "kategori": "Teknis",
             "subjek": "Test Ticket from API",
             "pesan_user": "This is a test ticket created via API testing"
         }
