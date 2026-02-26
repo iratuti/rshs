@@ -11,6 +11,7 @@ import AuthCallback from './pages/AuthCallback';
 import InputLogbookPage from './pages/InputLogbookPage';
 import GeneratorLaporanPage from './pages/GeneratorLaporanPage';
 import RekapLogbookPage from './pages/RekapLogbookPage';
+import MasterPasienPage from './pages/MasterPasienPage';
 import BillingPage from './pages/BillingPage';
 import SupportPage from './pages/SupportPage';
 import ProfilePage from './pages/ProfilePage';
@@ -47,6 +48,7 @@ const AppRouter = () => {
         <Route index element={<InputLogbookPage />} />
         <Route path="generator" element={<GeneratorLaporanPage />} />
         <Route path="rekap" element={<RekapLogbookPage />} />
+        <Route path="pasien" element={<MasterPasienPage />} />
         <Route path="billing" element={<BillingPage />} />
         <Route path="support" element={<SupportPage />} />
         <Route path="profile" element={<ProfilePage />} />
