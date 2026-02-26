@@ -13,28 +13,34 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Popover, PopoverContent, PopoverTrigger } from '../components/ui/popover';
 import { ScrollArea } from '../components/ui/scroll-area';
 import { Badge } from '../components/ui/badge';
+import { RadioGroup, RadioGroupItem } from '../components/ui/radio-group';
 import { toast } from 'sonner';
-import { Plus, Search, User, Clock, Calendar, Trash2, Edit, Check, ChevronsUpDown } from 'lucide-react';
+import { Plus, User, Calendar, Trash2, Check, ChevronsUpDown } from 'lucide-react';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
-// 15 Toggle Actions
+// 13 Toggle Actions (exactly as specified)
 const TINDAKAN_TOGGLES = [
   { key: 'oksigenasi', label: 'Oksigenasi' },
   { key: 'perawatan_luka_sederhana', label: 'Perawatan Luka Sederhana' },
-  { key: 'pre_pasca_op', label: 'Pre/Pasca OP' },
+  { key: 'pre_pasca_op', label: 'Pre / Pasca OP' },
   { key: 'kompres_terbuka', label: 'Kompres Terbuka' },
   { key: 'memasang_infus_baru', label: 'Memasang Infus Baru' },
   { key: 'memberikan_cairan_infus', label: 'Memberikan Cairan Infus' },
-  { key: 'ngt', label: 'NGT' },
+  { key: 'memasang_ngt', label: 'Memasang NGT' },
   { key: 'transfusi_darah', label: 'Transfusi Darah' },
-  { key: 'injeksi', label: 'Injeksi' },
   { key: 'nebu', label: 'Nebu' },
   { key: 'memasang_dc_kateter', label: 'Memasang DC/Kateter' },
   { key: 'koreksi_caglukonas', label: 'Koreksi CAGlukonas' },
   { key: 'koreksi_kcl', label: 'Koreksi KCL' },
   { key: 'uji_lab', label: 'Uji Lab' },
-  { key: 'pasien_baru_pulang', label: 'Pasien Baru/Pasien Pulang' },
+];
+
+// Status Pasien options
+const STATUS_PASIEN_OPTIONS = [
+  { value: 'PASIEN_BARU', label: 'Pasien Baru' },
+  { value: 'PASIEN_LAMA', label: 'Pasien Lama' },
+  { value: 'PASIEN_PULANG', label: 'Pasien Pulang' },
 ];
 
 // Keterangan Checkboxes
@@ -78,8 +84,9 @@ const InputLogbookPage = () => {
     jam_pulang: '14:00',
   });
   
-  // Tindakan form
+  // Tindakan form with jenis_pasien
   const [tindakanForm, setTindakanForm] = useState({
+    jenis_pasien: 'PASIEN_LAMA',
     keterangan_tindakan: [],
     catatan_lainnya: '',
     ...Object.fromEntries(TINDAKAN_TOGGLES.map(t => [t.key, false]))
@@ -136,20 +143,6 @@ const InputLogbookPage = () => {
     }
   };
 
-  const searchPatients = async (query) => {
-    try {
-      const response = await fetch(`${API_URL}/api/patients/search?q=${encodeURIComponent(query)}`, {
-        credentials: 'include'
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setPatients(data);
-      }
-    } catch (error) {
-      console.error('Error searching patients:', error);
-    }
-  };
-
   const handleCreatePatient = async () => {
     try {
       const response = await fetch(`${API_URL}/api/patients`, {
@@ -194,12 +187,14 @@ const InputLogbookPage = () => {
         const data = await response.json();
         setLogbook(data);
         toast.success('Logbook berhasil disimpan');
+        return data;
       }
     } catch (error) {
       toast.error('Gagal menyimpan logbook');
     } finally {
       setSaving(false);
     }
+    return null;
   };
 
   const handleAddTindakan = async () => {
@@ -209,8 +204,10 @@ const InputLogbookPage = () => {
     }
 
     // Create logbook first if doesn't exist
+    let currentLogbook = logbook;
     if (!logbook) {
-      await handleSaveLogbook();
+      currentLogbook = await handleSaveLogbook();
+      if (!currentLogbook) return;
     }
 
     const tindakan = {
@@ -219,11 +216,12 @@ const InputLogbookPage = () => {
       no_rm: selectedPatient.no_rm,
       no_billing: selectedPatient.no_billing,
       diagnosa: selectedPatient.diagnosa,
+      jenis_pasien: tindakanForm.jenis_pasien,
       ...tindakanForm
     };
 
     try {
-      const response = await fetch(`${API_URL}/api/logbooks/${logbook?.logbook_id}/tindakan`, {
+      const response = await fetch(`${API_URL}/api/logbooks/${currentLogbook.logbook_id}/tindakan`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -235,16 +233,17 @@ const InputLogbookPage = () => {
         setLogbook(data);
         setShowAddModal(false);
         resetTindakanForm();
-        toast.success('Tindakan berhasil ditambahkan');
+        toast.success('Catatan kegiatan berhasil ditambahkan');
       }
     } catch (error) {
-      toast.error('Gagal menambahkan tindakan');
+      toast.error('Gagal menambahkan catatan kegiatan');
     }
   };
 
   const resetTindakanForm = () => {
     setSelectedPatient(null);
     setTindakanForm({
+      jenis_pasien: 'PASIEN_LAMA',
       keterangan_tindakan: [],
       catatan_lainnya: '',
       ...Object.fromEntries(TINDAKAN_TOGGLES.map(t => [t.key, false]))
@@ -270,10 +269,10 @@ const InputLogbookPage = () => {
       if (response.ok) {
         const data = await response.json();
         setLogbook(data);
-        toast.success('Tindakan berhasil dihapus');
+        toast.success('Catatan kegiatan berhasil dihapus');
       }
     } catch (error) {
-      toast.error('Gagal menghapus tindakan');
+      toast.error('Gagal menghapus catatan kegiatan');
     }
   };
 
@@ -290,6 +289,24 @@ const InputLogbookPage = () => {
     p.nama_pasien.toLowerCase().includes(searchQuery.toLowerCase()) ||
     p.no_rm.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const getJenisPasienBadge = (jenis) => {
+    const colors = {
+      'PASIEN_BARU': 'bg-emerald-50 text-emerald-700 border-emerald-200',
+      'PASIEN_LAMA': 'bg-blue-50 text-blue-700 border-blue-200',
+      'PASIEN_PULANG': 'bg-orange-50 text-orange-700 border-orange-200'
+    };
+    const labels = {
+      'PASIEN_BARU': 'Baru',
+      'PASIEN_LAMA': 'Lama',
+      'PASIEN_PULANG': 'Pulang'
+    };
+    return (
+      <Badge className={`${colors[jenis] || 'bg-slate-100'} border text-xs`}>
+        {labels[jenis] || jenis}
+      </Badge>
+    );
+  };
 
   if (loading) {
     return (
@@ -388,7 +405,7 @@ const InputLogbookPage = () => {
           <div className="flex items-center justify-between">
             <CardTitle className="text-lg font-heading flex items-center gap-2">
               <User className="w-5 h-5 text-teal-600" />
-              Daftar Tindakan ({logbook?.daftar_tindakan?.length || 0})
+              Daftar Catatan Kegiatan ({logbook?.daftar_tindakan?.length || 0})
             </CardTitle>
             <Dialog open={showAddModal} onOpenChange={setShowAddModal}>
               <DialogTrigger asChild>
@@ -403,7 +420,7 @@ const InputLogbookPage = () => {
               </DialogTrigger>
               <DialogContent className="max-w-lg max-h-[90vh] overflow-hidden flex flex-col">
                 <DialogHeader>
-                  <DialogTitle className="font-heading">Tambah Data Pasien</DialogTitle>
+                  <DialogTitle className="font-heading">Tambah Catatan Kegiatan</DialogTitle>
                 </DialogHeader>
                 <ScrollArea className="flex-1 pr-4">
                   <div className="space-y-6 py-4">
@@ -488,6 +505,32 @@ const InputLogbookPage = () => {
                       </Button>
                     </div>
 
+                    {/* Status Pasien */}
+                    <div className="space-y-3">
+                      <Label>Status Pasien *</Label>
+                      <RadioGroup
+                        value={tindakanForm.jenis_pasien}
+                        onValueChange={(v) => setTindakanForm({...tindakanForm, jenis_pasien: v})}
+                        className="flex flex-wrap gap-4"
+                      >
+                        {STATUS_PASIEN_OPTIONS.map((option) => (
+                          <div key={option.value} className="flex items-center space-x-2">
+                            <RadioGroupItem 
+                              value={option.value} 
+                              id={option.value}
+                              data-testid={`radio-${option.value.toLowerCase()}`}
+                            />
+                            <Label 
+                              htmlFor={option.value} 
+                              className="text-sm cursor-pointer font-normal"
+                            >
+                              {option.label}
+                            </Label>
+                          </div>
+                        ))}
+                      </RadioGroup>
+                    </div>
+
                     {/* Keterangan Checkboxes */}
                     <div className="space-y-3">
                       <Label>Keterangan Tindakan</Label>
@@ -524,7 +567,7 @@ const InputLogbookPage = () => {
                       />
                     </div>
 
-                    {/* Toggle Switches */}
+                    {/* Toggle Switches - 13 items */}
                     <div className="space-y-3">
                       <Label>Tindakan Spesifik</Label>
                       <div className="grid gap-3">
@@ -543,6 +586,7 @@ const InputLogbookPage = () => {
                                 setTindakanForm({...tindakanForm, [toggle.key]: checked})
                               }
                               data-testid={`switch-${toggle.key}`}
+                              className="data-[state=checked]:bg-emerald-500"
                             />
                           </div>
                         ))}
@@ -562,7 +606,7 @@ const InputLogbookPage = () => {
                     data-testid="btn-simpan-tindakan"
                     className="bg-teal-600 hover:bg-teal-700"
                   >
-                    Simpan Tindakan
+                    Simpan Catatan
                   </Button>
                 </DialogFooter>
               </DialogContent>
@@ -573,8 +617,8 @@ const InputLogbookPage = () => {
           {(!logbook?.daftar_tindakan || logbook.daftar_tindakan.length === 0) ? (
             <div className="text-center py-8 text-slate-400">
               <User className="w-12 h-12 mx-auto mb-2 opacity-50" />
-              <p>Belum ada tindakan</p>
-              <p className="text-sm">Klik "Tambah" untuk menambahkan data pasien</p>
+              <p>Belum ada catatan kegiatan</p>
+              <p className="text-sm">Klik "Tambah" untuk menambahkan catatan kegiatan</p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -585,7 +629,10 @@ const InputLogbookPage = () => {
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
-                      <h4 className="font-semibold text-slate-900">{tindakan.nama_pasien}</h4>
+                      <div className="flex items-center gap-2 mb-1">
+                        <h4 className="font-semibold text-slate-900">{tindakan.nama_pasien}</h4>
+                        {getJenisPasienBadge(tindakan.jenis_pasien)}
+                      </div>
                       <p className="text-sm text-slate-500">
                         RM: {tindakan.no_rm} {tindakan.no_billing && `| Billing: ${tindakan.no_billing}`}
                       </p>
@@ -643,7 +690,7 @@ const InputLogbookPage = () => {
                 id="nama_pasien"
                 value={newPatient.nama_pasien}
                 onChange={(e) => setNewPatient({...newPatient, nama_pasien: e.target.value})}
-                data-testid="input-nama-pasien"
+                data-testid="input-nama-pasien-baru"
                 className="h-12"
               />
             </div>
@@ -653,7 +700,7 @@ const InputLogbookPage = () => {
                 id="no_rm"
                 value={newPatient.no_rm}
                 onChange={(e) => setNewPatient({...newPatient, no_rm: e.target.value})}
-                data-testid="input-no-rm"
+                data-testid="input-no-rm-baru"
                 className="h-12"
               />
             </div>
@@ -663,7 +710,7 @@ const InputLogbookPage = () => {
                 id="no_billing"
                 value={newPatient.no_billing}
                 onChange={(e) => setNewPatient({...newPatient, no_billing: e.target.value})}
-                data-testid="input-no-billing"
+                data-testid="input-no-billing-baru"
                 className="h-12"
               />
             </div>
@@ -673,7 +720,7 @@ const InputLogbookPage = () => {
                 id="diagnosa"
                 value={newPatient.diagnosa}
                 onChange={(e) => setNewPatient({...newPatient, diagnosa: e.target.value})}
-                data-testid="input-diagnosa"
+                data-testid="input-diagnosa-baru"
               />
             </div>
           </div>
@@ -683,7 +730,7 @@ const InputLogbookPage = () => {
             </Button>
             <Button 
               onClick={handleCreatePatient}
-              data-testid="btn-simpan-pasien"
+              data-testid="btn-simpan-pasien-baru"
               className="bg-teal-600 hover:bg-teal-700"
               disabled={!newPatient.nama_pasien || !newPatient.no_rm}
             >
