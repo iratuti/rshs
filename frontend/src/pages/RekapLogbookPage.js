@@ -151,12 +151,12 @@ const RekapLogbookPage = () => {
   });
 
   return (
-    <div className="space-y-4 animate-slide-in">
+    <div className="space-y-3 md:space-y-4 animate-slide-in">
       {/* Header */}
-      <div className="flex items-center justify-between print:hidden">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 print:hidden">
         <div>
-          <h1 className="text-2xl font-heading font-bold text-slate-900">Rekap Logbook</h1>
-          <p className="text-slate-500 text-sm mt-1">Tampilan spreadsheet data logbook bulanan</p>
+          <h1 className="text-xl md:text-2xl font-heading font-bold text-slate-900">Rekap Logbook</h1>
+          <p className="text-slate-500 text-xs md:text-sm mt-0.5">Tampilan spreadsheet data logbook bulanan</p>
         </div>
         <div className="flex gap-2">
           <Button
@@ -164,19 +164,19 @@ const RekapLogbookPage = () => {
             size="sm"
             onClick={handleExportCSV}
             data-testid="btn-export-csv"
-            className="rounded-full"
+            className="rounded-full text-xs md:text-sm h-8 md:h-9"
           >
-            <FileDown className="w-4 h-4 mr-1" />
-            Export CSV
+            <FileDown className="w-3.5 h-3.5 md:w-4 md:h-4 mr-1" />
+            <span className="hidden sm:inline">Export</span> CSV
           </Button>
           <Button
             variant="outline"
             size="sm"
             onClick={handlePrint}
             data-testid="btn-print"
-            className="rounded-full"
+            className="rounded-full text-xs md:text-sm h-8 md:h-9"
           >
-            <Printer className="w-4 h-4 mr-1" />
+            <Printer className="w-3.5 h-3.5 md:w-4 md:h-4 mr-1" />
             Print
           </Button>
         </div>
