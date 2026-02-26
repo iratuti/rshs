@@ -13,7 +13,9 @@ import {
   LogOut,
   Stethoscope,
   ChevronRight,
-  Database
+  Database,
+  ClipboardList,
+  FileCheck
 } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
@@ -21,11 +23,12 @@ import { Badge } from '../ui/badge';
 
 const userMenuItems = [
   { to: '/dashboard', icon: BookOpen, label: 'Input Logbook' },
-  { to: '/dashboard/generator', icon: FileText, label: 'Generator Laporan' },
+  { to: '/dashboard/e-remunerasi', icon: ClipboardList, label: 'e-Remunerasi' },
+  { to: '/dashboard/e-kinerja', icon: FileCheck, label: 'e-Kinerja' },
   { to: '/dashboard/rekap', icon: Calendar, label: 'Rekap Logbook' },
   { to: '/dashboard/pasien', icon: Database, label: 'Master Data Pasien' },
-  { to: '/dashboard/billing', icon: CreditCard, label: 'Billing' },
-  { to: '/dashboard/support', icon: HelpCircle, label: 'Support' },
+  { to: '/dashboard/billing', icon: CreditCard, label: 'Billing/Langganan' },
+  { to: '/dashboard/support', icon: HelpCircle, label: 'Tiket Support' },
 ];
 
 const adminMenuItems = [
