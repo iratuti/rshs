@@ -3,16 +3,41 @@ import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
-import { Textarea } from '../components/ui/textarea';
 import { ScrollArea } from '../components/ui/scroll-area';
 import { toast } from 'sonner';
-import { Calendar, Copy, RefreshCw, FileCheck, ClipboardCopy } from 'lucide-react';
+import { Calendar, Copy, RefreshCw, FileCheck } from 'lucide-react';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
-// e-Kinerja Point Templates
+// e-Kinerja Point Templates - ALL POINTS as specified
 const EKINERJA_POINTS = {
-  // SEMUA PASIEN
+  // PASIEN BARU - Points 1, 2, 5
+  BARU: [
+    {
+      point: 1,
+      template: (patients) => `Menerima pasien baru ${patients}\nMemastikan ketersediaan tempat tidur untuk pasien yang akan masuk rawat inap ${patients}`
+    },
+    {
+      point: 2,
+      template: (patients) => `Menyiapkan ruangan dan melakukan verbedent sebelum pasien baru ${patients} masuk ke ruangan.`
+    },
+    {
+      point: 5,
+      template: (patients) => `Menerima pasien baru ${patients} sesuai dengan pesanan admission`
+    },
+  ],
+  // PASIEN PULANG - Points 4, 25
+  PULANG: [
+    {
+      point: 4,
+      template: (patients) => `Melakukan koordinasi dengan DPJP terkait resume pulang dan KOP pulang pasien ${patients} harus ada sebelum pulang atau H-1`
+    },
+    {
+      point: 25,
+      template: (patients) => `Memastikan kelengkapan administrasi pasien pulang mulai dari RMK, resume, kelengkapan tindakan atau data pelayanaan, laporan operasi dan obat pulang kepada ${patients}`
+    },
+  ],
+  // SEMUA PASIEN - Points 10, 11, 13, 16, 17, 18, 22, 24, 27
   ALL: [
     {
       point: 10,
@@ -51,32 +76,6 @@ const EKINERJA_POINTS = {
       template: (patients) => `Setiap melakukan tindakan keperawatan kepada pasien ${patients} memakai APD sesuai standar, misalnya membuang urine pasien menggunakan handscone, memakai masker di ruang droplet`
     },
   ],
-  // PASIEN BARU
-  BARU: [
-    {
-      point: 1,
-      template: (patients) => `Menerima pasien baru ${patients}\nMemastikan ketersediaan tempat tidur untuk pasien yang akan masuk rawat inap ${patients}`
-    },
-    {
-      point: 2,
-      template: (patients) => `Menyiapkan ruangan dan melakukan verbedent sebelum pasien baru ${patients} masuk ke ruangan.`
-    },
-    {
-      point: 5,
-      template: (patients) => `Menerima pasien baru ${patients} sesuai dengan pesanan admission`
-    },
-  ],
-  // PASIEN PULANG
-  PULANG: [
-    {
-      point: 4,
-      template: (patients) => `Melakukan koordinasi dengan DPJP terkait resume pulang dan KOP pulang pasien ${patients} harus ada sebelum pulang atau H-1`
-    },
-    {
-      point: 25,
-      template: (patients) => `Memastikan kelengkapan administrasi pasien pulang mulai dari RMK, resume, kelengkapan tindakan atau data pelayanaan, laporan operasi dan obat pulang kepada ${patients}`
-    },
-  ],
 };
 
 // Shift times mapping
@@ -90,14 +89,14 @@ const EKinerjaPage = () => {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [loading, setLoading] = useState(false);
   const [logbookData, setLogbookData] = useState(null);
-  const [generatedPoints, setGeneratedPoints] = useState([]);
+  const [generatedSubPoints, setGeneratedSubPoints] = useState([]);
 
   // Format patient name
   const formatPatientName = (tindakan) => {
     return `Tn. ${tindakan.nama_pasien} (${tindakan.no_rm})`;
   };
 
-  // Process patients and generate e-Kinerja points
+  // Process patients and generate e-Kinerja points, then SPLIT by \n
   const generateEKinerja = useCallback((logbook) => {
     if (!logbook?.daftar_tindakan?.length) return [];
 
@@ -114,56 +113,57 @@ const EKinerjaPage = () => {
     const pasienPulangStr = pasienPulang.length > 0 ? pasienPulang.join(', ') : null;
 
     const shiftTimes = SHIFT_TIMES[logbook.shift] || SHIFT_TIMES.PAGI;
-    const points = [];
+    const subPoints = [];
 
-    // PASIEN BARU points (only if exists)
+    // Helper to split and add sub-points
+    const addSubPoints = (point, category, text) => {
+      const lines = text.split('\n').filter(line => line.trim());
+      lines.forEach((line, idx) => {
+        subPoints.push({
+          point,
+          subIndex: idx + 1,
+          totalSubs: lines.length,
+          category,
+          text: line.trim()
+        });
+      });
+    };
+
+    // PASIEN BARU points (only if exists) - Points 1, 2, 5
     if (pasienBaruStr) {
       EKINERJA_POINTS.BARU.forEach(({ point, template }) => {
-        points.push({
-          point,
-          category: 'PASIEN BARU',
-          text: template(pasienBaruStr)
-        });
+        addSubPoints(point, 'PASIEN BARU', template(pasienBaruStr));
       });
     }
 
-    // PASIEN PULANG points (only if exists)
+    // PASIEN PULANG points (only if exists) - Points 4, 25
     if (pasienPulangStr) {
       EKINERJA_POINTS.PULANG.forEach(({ point, template }) => {
-        points.push({
-          point,
-          category: 'PASIEN PULANG',
-          text: template(pasienPulangStr)
-        });
+        addSubPoints(point, 'PASIEN PULANG', template(pasienPulangStr));
       });
     }
 
-    // ALL PASIEN points
+    // ALL PASIEN points - Points 10, 11, 13, 16, 17, 18, 22, 24, 27
     EKINERJA_POINTS.ALL.forEach(({ point, template }) => {
-      points.push({
-        point,
-        category: 'SEMUA PASIEN',
-        text: template(semuaPasienStr)
-      });
+      addSubPoints(point, 'SEMUA PASIEN', template(semuaPasienStr));
     });
 
-    // ABSENSI & SHIFT points
-    points.push({
-      point: 28,
-      category: 'ABSENSI & SHIFT',
-      text: `Melakukan briefing dan berdoa sebelum jam pelayanan dimulai pukul ${shiftTimes.time1}\nMelakukan dan memulai jam pelayanan pada pukul ${shiftTimes.time2}\nMelakukan operan pada pasien dari dinas ${shiftTimes.label}`
+    // ABSENSI & SHIFT points - Points 28, 29
+    addSubPoints(28, 'ABSENSI & SHIFT', 
+      `Melakukan briefing dan berdoa sebelum jam pelayanan dimulai pukul ${shiftTimes.time1}\nMelakukan dan memulai jam pelayanan pada pukul ${shiftTimes.time2}\nMelakukan operan pada pasien dari dinas ${shiftTimes.label}`
+    );
+
+    addSubPoints(29, 'ABSENSI & SHIFT',
+      `Melakukan absensi dinas ${shiftTimes.label}, absensi datang pukul ${logbook.jam_datang}, dan absesni pulang pukul ${logbook.jam_pulang}`
+    );
+
+    // Sort by point number, then by subIndex
+    subPoints.sort((a, b) => {
+      if (a.point !== b.point) return a.point - b.point;
+      return a.subIndex - b.subIndex;
     });
 
-    points.push({
-      point: 29,
-      category: 'ABSENSI & SHIFT',
-      text: `Melakukan absensi dinas ${shiftTimes.label}, absensi datang pukul ${logbook.jam_datang}, dan absesni pulang pukul ${logbook.jam_pulang}`
-    });
-
-    // Sort by point number
-    points.sort((a, b) => a.point - b.point);
-
-    return points;
+    return subPoints;
   }, []);
 
   const fetchLogbookByDate = async () => {
@@ -179,12 +179,12 @@ const EKinerjaPage = () => {
         
         if (logbook) {
           setLogbookData(logbook);
-          const points = generateEKinerja(logbook);
-          setGeneratedPoints(points);
-          toast.success(`e-Kinerja berhasil di-generate (${points.length} poin)`);
+          const subPoints = generateEKinerja(logbook);
+          setGeneratedSubPoints(subPoints);
+          toast.success(`e-Kinerja berhasil di-generate (${subPoints.length} sub-poin)`);
         } else {
           setLogbookData(null);
-          setGeneratedPoints([]);
+          setGeneratedSubPoints([]);
           toast.info('Tidak ada data logbook untuk tanggal ini');
         }
       }
@@ -201,9 +201,9 @@ const EKinerjaPage = () => {
     toast.success(`${label} berhasil disalin`);
   };
 
-  const copyAllPoints = () => {
-    const fullText = generatedPoints.map(p => `[Point ${p.point}]\n${p.text}`).join('\n\n');
-    copyToClipboard(fullText, 'Semua poin e-Kinerja');
+  const copyAllSubPoints = () => {
+    const fullText = generatedSubPoints.map(p => p.text).join('\n\n');
+    copyToClipboard(fullText, 'Semua sub-poin e-Kinerja');
   };
 
   const getSummary = () => {
@@ -218,34 +218,52 @@ const EKinerjaPage = () => {
 
   const summary = getSummary();
 
+  // Group sub-points by point number for display
+  const groupedByPoint = generatedSubPoints.reduce((acc, sp) => {
+    if (!acc[sp.point]) {
+      acc[sp.point] = { category: sp.category, items: [] };
+    }
+    acc[sp.point].items.push(sp);
+    return acc;
+  }, {});
+
+  const getCategoryColor = (category) => {
+    switch (category) {
+      case 'PASIEN BARU': return 'text-emerald-600 bg-emerald-50';
+      case 'PASIEN PULANG': return 'text-orange-600 bg-orange-50';
+      case 'ABSENSI & SHIFT': return 'text-purple-600 bg-purple-50';
+      default: return 'text-blue-600 bg-blue-50';
+    }
+  };
+
   return (
-    <div className="space-y-6 animate-slide-in">
+    <div className="space-y-4 md:space-y-6 animate-slide-in">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-heading font-bold text-slate-900">e-Kinerja</h1>
-        <p className="text-slate-500 text-sm mt-1">Generate laporan e-Kinerja dari data logbook</p>
+        <h1 className="text-xl md:text-2xl font-heading font-bold text-slate-900">e-Kinerja</h1>
+        <p className="text-slate-500 text-sm mt-0.5">Generate laporan e-Kinerja dari data logbook</p>
       </div>
 
       {/* Date Picker & Generate */}
       <Card className="border-0 shadow-card bg-white">
         <CardContent className="p-4">
-          <div className="flex flex-col sm:flex-row gap-4 items-end">
-            <div className="flex-1 space-y-2">
-              <Label htmlFor="date-picker">Pilih Tanggal</Label>
+          <div className="flex flex-col sm:flex-row gap-3 sm:items-end">
+            <div className="flex-1 space-y-1.5">
+              <Label htmlFor="date-picker" className="text-sm">Pilih Tanggal</Label>
               <Input
                 id="date-picker"
                 type="date"
                 value={selectedDate}
                 onChange={(e) => setSelectedDate(e.target.value)}
                 data-testid="date-picker-kinerja"
-                className="h-12"
+                className="h-10 md:h-12"
               />
             </div>
             <Button
               onClick={fetchLogbookByDate}
               disabled={loading}
               data-testid="btn-generate-kinerja"
-              className="h-12 bg-teal-600 hover:bg-teal-700 px-8"
+              className="h-10 md:h-12 bg-teal-600 hover:bg-teal-700 px-6 md:px-8"
             >
               {loading ? (
                 <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
@@ -262,13 +280,13 @@ const EKinerjaPage = () => {
       {summary && (
         <Card className="border-0 shadow-card bg-gradient-to-br from-teal-50 to-emerald-50">
           <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-xl bg-teal-600 flex items-center justify-center">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-teal-600 flex items-center justify-center shrink-0">
                   <Calendar className="w-5 h-5 text-white" />
                 </div>
                 <div>
-                  <p className="font-heading font-semibold text-slate-900">
+                  <p className="font-heading font-semibold text-slate-900 text-sm md:text-base">
                     {new Date(selectedDate).toLocaleDateString('id-ID', {
                       weekday: 'long',
                       day: 'numeric',
@@ -276,22 +294,23 @@ const EKinerjaPage = () => {
                       year: 'numeric'
                     })}
                   </p>
-                  <p className="text-sm text-slate-600">
+                  <p className="text-xs md:text-sm text-slate-600">
                     Shift {logbookData?.shift} | {summary.total} pasien
                     {summary.baru > 0 && ` (${summary.baru} baru)`}
                     {summary.pulang > 0 && ` (${summary.pulang} pulang)`}
                   </p>
                 </div>
               </div>
-              {generatedPoints.length > 0 && (
+              {generatedSubPoints.length > 0 && (
                 <Button
                   variant="outline"
-                  onClick={copyAllPoints}
+                  size="sm"
+                  onClick={copyAllSubPoints}
                   data-testid="btn-copy-all-kinerja"
-                  className="rounded-full"
+                  className="rounded-full text-xs md:text-sm"
                 >
-                  <Copy className="w-4 h-4 mr-2" />
-                  Salin Semua ({generatedPoints.length} poin)
+                  <Copy className="w-3.5 h-3.5 mr-1.5" />
+                  Salin Semua ({generatedSubPoints.length})
                 </Button>
               )}
             </div>
@@ -299,49 +318,52 @@ const EKinerjaPage = () => {
         </Card>
       )}
 
-      {/* Generated Points */}
-      {generatedPoints.length > 0 ? (
+      {/* Generated Sub-Points - EACH IN SEPARATE CARD */}
+      {generatedSubPoints.length > 0 ? (
         <Card className="border-0 shadow-card bg-white">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg font-heading flex items-center gap-2">
-              <FileCheck className="w-5 h-5 text-teal-600" />
-              Hasil e-Kinerja ({generatedPoints.length} Poin)
+          <CardHeader className="pb-2 md:pb-3">
+            <CardTitle className="text-base md:text-lg font-heading flex items-center gap-2">
+              <FileCheck className="w-4 h-4 md:w-5 md:h-5 text-teal-600" />
+              Hasil e-Kinerja ({generatedSubPoints.length} Sub-Poin)
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <ScrollArea className="h-[600px] pr-4">
-              <div className="space-y-4">
-                {generatedPoints.map((item, idx) => (
-                  <div 
-                    key={idx}
-                    className="p-4 bg-slate-50 rounded-xl border border-slate-100"
-                  >
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center gap-3">
-                        <span className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-teal-600 text-white text-sm font-semibold">
-                          {item.point}
-                        </span>
-                        <span className="text-sm text-slate-500">
-                          {item.category}
-                        </span>
-                      </div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => copyToClipboard(item.text, `Point ${item.point}`)}
-                        data-testid={`btn-copy-point-${item.point}`}
-                        className="rounded-full"
-                      >
-                        <ClipboardCopy className="w-4 h-4 mr-1" />
-                        Copy
-                      </Button>
+          <CardContent className="p-0">
+            <ScrollArea className="h-[500px] md:h-[600px]">
+              <div className="p-4 space-y-3">
+                {Object.entries(groupedByPoint).map(([pointNum, group]) => (
+                  <div key={pointNum} className="space-y-2">
+                    {/* Point Header */}
+                    <div className="flex items-center gap-2 sticky top-0 bg-white py-2 z-10">
+                      <span className={`inline-flex items-center justify-center min-w-[28px] h-7 px-2 rounded-lg text-xs font-bold ${getCategoryColor(group.category)}`}>
+                        {pointNum}
+                      </span>
+                      <span className="text-xs text-slate-500 uppercase tracking-wide">
+                        {group.category}
+                      </span>
                     </div>
-                    {/* Clean text output - no badges inside */}
-                    <Textarea
-                      value={item.text}
-                      readOnly
-                      className="min-h-[100px] text-sm bg-white resize-none font-normal"
-                    />
+                    
+                    {/* Sub-Points - EACH IN SEPARATE BOX */}
+                    {group.items.map((subPoint, idx) => (
+                      <div 
+                        key={`${pointNum}-${idx}`}
+                        className="flex items-start gap-2 p-3 bg-slate-50 rounded-lg border border-slate-100 group"
+                      >
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs md:text-sm text-slate-700 leading-relaxed whitespace-pre-wrap break-words">
+                            {subPoint.text}
+                          </p>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => copyToClipboard(subPoint.text, `Point ${pointNum}.${subPoint.subIndex}`)}
+                          data-testid={`btn-copy-${pointNum}-${idx}`}
+                          className="shrink-0 h-8 px-2 opacity-60 hover:opacity-100 transition-opacity"
+                        >
+                          <Copy className="w-3.5 h-3.5" />
+                        </Button>
+                      </div>
+                    ))}
                   </div>
                 ))}
               </div>
@@ -350,10 +372,10 @@ const EKinerjaPage = () => {
         </Card>
       ) : (
         <Card className="border-0 shadow-card bg-slate-50">
-          <CardContent className="p-12 text-center text-slate-400">
-            <FileCheck className="w-12 h-12 mx-auto mb-4 opacity-50" />
-            <p>Pilih tanggal dan klik "Generate" untuk membuat laporan e-Kinerja</p>
-            <p className="text-sm mt-2">Laporan akan di-generate berdasarkan data logbook yang tersimpan</p>
+          <CardContent className="p-8 md:p-12 text-center text-slate-400">
+            <FileCheck className="w-10 h-10 md:w-12 md:h-12 mx-auto mb-3 opacity-50" />
+            <p className="text-sm md:text-base">Pilih tanggal dan klik "Generate" untuk membuat laporan e-Kinerja</p>
+            <p className="text-xs md:text-sm mt-2">Setiap sub-poin akan ditampilkan dalam kotak terpisah</p>
           </CardContent>
         </Card>
       )}
