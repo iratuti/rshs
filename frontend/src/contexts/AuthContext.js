@@ -58,6 +58,28 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const demoLogin = async (email, password) => {
+    try {
+      const response = await fetch(`${API_URL}/api/auth/demo-login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ email, password }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Demo login failed');
+      }
+
+      const data = await response.json();
+      setUser(data.user);
+      return data.user;
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    }
+  };
+
   const exchangeSession = async (sessionId) => {
     try {
       const response = await fetch(`${API_URL}/api/auth/session`, {
@@ -108,6 +130,7 @@ export const AuthProvider = ({ children }) => {
     error,
     login,
     logout,
+    demoLogin,
     exchangeSession,
     updateProfile,
     checkAuth,
