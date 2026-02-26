@@ -241,36 +241,36 @@ const ERemunerasiPage = () => {
 
           {/* Generated Points */}
           {generatedPoints.length > 0 ? (
-            <div className="space-y-4">
+            <div className="space-y-3 md:space-y-4">
               {generatedPoints.map((point, idx) => (
                 <Card key={idx} className="border-0 shadow-card bg-white">
-                  <CardHeader className="pb-2">
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-base font-heading">
+                  <CardHeader className="pb-2 p-3 md:p-4 md:pb-2">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                      <CardTitle className="text-sm md:text-base font-heading">
                         Point {point.point}: {point.title}
                       </CardTitle>
                       <div className="flex items-center gap-2">
-                        <span className="text-sm text-slate-500">
-                          Jumlah Kegiatan: <strong className="text-teal-600">{point.jumlahKegiatan}</strong>
+                        <span className="text-xs md:text-sm text-slate-500">
+                          Kegiatan: <strong className="text-teal-600">{point.jumlahKegiatan}</strong>
                         </span>
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={() => copyToClipboard(point.generatedText, `Point ${point.point}`)}
                           data-testid={`btn-copy-point-${point.point}`}
-                          className="rounded-full"
+                          className="rounded-full text-xs h-8"
                         >
-                          <Copy className="w-4 h-4 mr-1" />
+                          <Copy className="w-3.5 h-3.5 mr-1" />
                           Copy
                         </Button>
                       </div>
                     </div>
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className="p-3 md:p-4 pt-0 md:pt-0">
                     <Textarea
                       value={point.generatedText}
                       readOnly
-                      className="min-h-[80px] text-sm bg-slate-50 resize-none"
+                      className="min-h-[70px] md:min-h-[80px] text-xs md:text-sm bg-slate-50 resize-none"
                     />
                   </CardContent>
                 </Card>
@@ -278,9 +278,9 @@ const ERemunerasiPage = () => {
             </div>
           ) : (
             <Card className="border-0 shadow-card bg-slate-50">
-              <CardContent className="p-12 text-center text-slate-400">
-                <ClipboardList className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                <p>Pilih tanggal dan klik "Generate" untuk membuat laporan</p>
+              <CardContent className="p-8 md:p-12 text-center text-slate-400">
+                <ClipboardList className="w-10 h-10 md:w-12 md:h-12 mx-auto mb-3 md:mb-4 opacity-50" />
+                <p className="text-sm md:text-base">Pilih tanggal dan klik "Generate" untuk membuat laporan</p>
               </CardContent>
             </Card>
           )}
