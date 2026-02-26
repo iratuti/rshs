@@ -9,7 +9,8 @@ import { Toaster } from './components/ui/sonner';
 import LoginPage from './pages/LoginPage';
 import AuthCallback from './pages/AuthCallback';
 import InputLogbookPage from './pages/InputLogbookPage';
-import GeneratorLaporanPage from './pages/GeneratorLaporanPage';
+import ERemunerasiPage from './pages/ERemunerasiPage';
+import EKinerjaPage from './pages/EKinerjaPage';
 import RekapLogbookPage from './pages/RekapLogbookPage';
 import MasterPasienPage from './pages/MasterPasienPage';
 import BillingPage from './pages/BillingPage';
@@ -46,7 +47,8 @@ const AppRouter = () => {
         }
       >
         <Route index element={<InputLogbookPage />} />
-        <Route path="generator" element={<GeneratorLaporanPage />} />
+        <Route path="e-remunerasi" element={<ERemunerasiPage />} />
+        <Route path="e-kinerja" element={<EKinerjaPage />} />
         <Route path="rekap" element={<RekapLogbookPage />} />
         <Route path="pasien" element={<MasterPasienPage />} />
         <Route path="billing" element={<BillingPage />} />
