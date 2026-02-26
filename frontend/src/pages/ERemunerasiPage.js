@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Input } from '../components/ui/input';
@@ -7,39 +7,28 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table';
 import { Textarea } from '../components/ui/textarea';
+import { ScrollArea } from '../components/ui/scroll-area';
 import { toast } from 'sonner';
 import { Calendar, Copy, RefreshCw, ClipboardList, FileText } from 'lucide-react';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
-// e-Remunerasi Point Definitions
-const EREMUNERASI_POINTS = [
-  {
-    point: 1,
-    title: 'MELAKUKAN ASESMEN AWAL DAN LANJUTAN SERTA MEMBERIKAN EDUKASI',
-    prefix: 'Melakukan asesmen awal dan lanjutan serta memberikan edukasi kepada pasien '
-  },
-  {
-    point: 2,
-    title: 'MELAKUKAN OBSERVASI DAN MONITORING PASIEN',
-    prefix: 'Melakukan observasi dan monitoring kepada pasien '
-  },
-  {
-    point: 3,
-    title: 'MEMBERIKAN TINDAKAN KEPERAWATAN',
-    prefix: 'Memberikan tindakan keperawatan kepada pasien '
-  },
-  {
-    point: 4,
-    title: 'MELAKUKAN DOKUMENTASI ASUHAN KEPERAWATAN',
-    prefix: 'Melakukan dokumentasi asuhan keperawatan pasien '
-  },
-  {
-    point: 5,
-    title: 'MELAKUKAN KOLABORASI DENGAN TIM KESEHATAN LAIN',
-    prefix: 'Melakukan kolaborasi dengan tim kesehatan lain untuk pasien '
-  }
-];
+// Action Map for Point 4 - Tindakan Spesifik
+const TINDAKAN_ACTION_MAP = {
+  oksigenasi: 'Memberikan tindakan Oksigenasi kepada pasien',
+  perawatan_luka_sederhana: 'Melakukan perawatan luka sederhana kepada pasien',
+  pre_pasca_op: 'Melakukan persiapan/perawatan pre/pasca OP kepada pasien',
+  kompres_terbuka: 'Melakukan kompres terbuka kepada pasien',
+  memasang_infus_baru: 'Memasang infus baru kepada pasien',
+  memberikan_cairan_infus: 'Memberikan cairan infus kepada pasien',
+  memasang_ngt: 'Memasang NGT kepada pasien',
+  transfusi_darah: 'Melakukan transfusi darah kepada pasien',
+  nebu: 'Memberikan terapi nebulizer kepada pasien',
+  memasang_dc_kateter: 'Memasang DC/Kateter kepada pasien',
+  koreksi_caglukonas: 'Melakukan koreksi CAGlukonas kepada pasien',
+  koreksi_kcl: 'Melakukan koreksi KCL kepada pasien',
+  uji_lab: 'Melakukan pengambilan sampel uji lab kepada pasien',
+};
 
 const MONTHS = [
   { value: 1, label: 'Januari' },
@@ -54,6 +43,15 @@ const MONTHS = [
   { value: 10, label: 'Oktober' },
   { value: 11, label: 'November' },
   { value: 12, label: 'Desember' },
+];
+
+// Point definitions for Mode 2 (Per Tanggal)
+const POINT_DEFINITIONS = [
+  { point: 1, title: 'MELAKUKAN ASESMEN KEPERAWATAN PADA PASIEN SESUAI STANDAR' },
+  { point: 2, title: 'MELAKSANAKAN FUNGSI ADVOKASI DAN KOLABORASI' },
+  { point: 3, title: 'MELAKUKAN DOKUMENTASI ASUHAN DALAM REKAM MEDIK' },
+  { point: 4, title: 'MELAKUKAN TINDAKAN KEPERAWATAN SESUAI JUMLAH PASIEN' },
+  { point: 5, title: 'MELAKUKAN MONITORING DAN PENGELOLAAN PASIEN SESUAI EWS' },
 ];
 
 const ERemunerasiPage = () => {
@@ -79,25 +77,93 @@ const ERemunerasiPage = () => {
     return `Tn/Ny. ${tindakan.nama_pasien} (${tindakan.no_rm})`;
   };
 
-  // Generate e-Remunerasi points from logbook
+  // Generate Point 4 - Group patients by specific actions
+  const generatePoint4Text = useCallback((daftarTindakan) => {
+    const actionGroups = {};
+    
+    // Group patients by each action
+    daftarTindakan.forEach(tindakan => {
+      const patientName = formatPatientName(tindakan);
+      
+      Object.keys(TINDAKAN_ACTION_MAP).forEach(actionKey => {
+        if (tindakan[actionKey] === true) {
+          if (!actionGroups[actionKey]) {
+            actionGroups[actionKey] = [];
+          }
+          actionGroups[actionKey].push(patientName);
+        }
+      });
+    });
+
+    // Build numbered list
+    const actionLines = [];
+    let lineNumber = 1;
+    
+    Object.keys(TINDAKAN_ACTION_MAP).forEach(actionKey => {
+      if (actionGroups[actionKey] && actionGroups[actionKey].length > 0) {
+        const patients = actionGroups[actionKey].join(', ');
+        actionLines.push(`${lineNumber}. ${TINDAKAN_ACTION_MAP[actionKey]} ${patients}`);
+        lineNumber++;
+      }
+    });
+
+    // If no specific actions, return default text
+    if (actionLines.length === 0) {
+      const allPatients = daftarTindakan.map(formatPatientName).join(', ');
+      return `Melakukan tindakan keperawatan dasar kepada pasien ${allPatients}`;
+    }
+
+    return actionLines.join('\n');
+  }, []);
+
+  // Generate e-Remunerasi 5 Points from logbook - CORRECT LOGIC
   const generatePointsFromLogbook = useCallback((logbook) => {
     if (!logbook?.daftar_tindakan?.length) return [];
 
-    const patientNames = logbook.daftar_tindakan.map(formatPatientName).join(', ');
+    const semuaPasienStr = logbook.daftar_tindakan.map(formatPatientName).join(', ');
     const patientCount = logbook.daftar_tindakan.length;
 
-    return EREMUNERASI_POINTS.map(point => ({
-      ...point,
-      generatedText: point.prefix + patientNames,
-      jumlahKegiatan: patientCount
-    }));
-  }, []);
+    const points = [
+      {
+        point: 1,
+        title: 'MELAKUKAN ASESMEN KEPERAWATAN PADA PASIEN SESUAI STANDAR',
+        generatedText: `Melakukan asesmen awal dan lanjutan serta memberikan edukasi kepada pasien ${semuaPasienStr}`,
+        jumlahKegiatan: patientCount
+      },
+      {
+        point: 2,
+        title: 'MELAKSANAKAN FUNGSI ADVOKASI DAN KOLABORASI DENGAN MENDAMPINGI VISITE DPJP SESUAI STANDAR',
+        generatedText: `Melaksanakan fungsi advokasi dan kolaborasi dengan mendampingi visite DPJP kepada pasien ${semuaPasienStr}`,
+        jumlahKegiatan: patientCount
+      },
+      {
+        point: 3,
+        title: 'MELAKUKAN DOKUMENTASI ASUHAN DALAM REKAM MEDIK DENGAN TEPAT DAN LENGKAP SESUAI STANDAR',
+        generatedText: `Melakukan dokumentasi asuhan dalam rekam medis dengan tepat dan lengkap sesuai standar kepada pasien ${semuaPasienStr}`,
+        jumlahKegiatan: patientCount
+      },
+      {
+        point: 4,
+        title: 'MELAKUKAN TINDAKAN KEPERAWATAN SESUAI DENGAN JUMLAH PASIEN YANG DIKELOLA',
+        generatedText: generatePoint4Text(logbook.daftar_tindakan),
+        jumlahKegiatan: patientCount,
+        isMultiLine: true
+      },
+      {
+        point: 5,
+        title: 'MELAKUKAN MONITORING DAN PENGELOLAAN PASIEN SESUAI STANDAR SKOR EWS',
+        generatedText: `Melakukan monitoring EWS dan pengelolaan pasien kepada ${semuaPasienStr}`,
+        jumlahKegiatan: patientCount
+      }
+    ];
+
+    return points;
+  }, [generatePoint4Text]);
 
   // Fetch logbook by date
   const fetchLogbookByDate = async (date) => {
     setLoading(true);
     try {
-      // First try to get today's logbook
       const response = await fetch(`${API_URL}/api/logbooks?month=${parseInt(date.split('-')[1])}&year=${parseInt(date.split('-')[0])}`, {
         credentials: 'include'
       });
@@ -110,7 +176,7 @@ const ERemunerasiPage = () => {
           setLogbookData(logbook);
           const points = generatePointsFromLogbook(logbook);
           setGeneratedPoints(points);
-          toast.success(`Data berhasil di-generate untuk tanggal ${date}`);
+          toast.success(`e-Remunerasi berhasil di-generate (${points.length} poin)`);
         } else {
           setLogbookData(null);
           setGeneratedPoints([]);
@@ -125,7 +191,7 @@ const ERemunerasiPage = () => {
     }
   };
 
-  // Fetch monthly logbooks for Mode 2
+  // Fetch monthly logbooks for Mode 2 - Updated logic
   const fetchMonthlyLogbooks = async () => {
     setLoading(true);
     try {
@@ -135,19 +201,41 @@ const ERemunerasiPage = () => {
       
       if (response.ok) {
         const logbooks = await response.json();
-        const pointIndex = parseInt(selectedPoint) - 1;
-        const pointDef = EREMUNERASI_POINTS[pointIndex];
+        const pointNum = parseInt(selectedPoint);
         
         const processedData = logbooks.map(logbook => {
-          const patientNames = logbook.daftar_tindakan?.map(formatPatientName).join(', ') || '';
           const patientCount = logbook.daftar_tindakan?.length || 0;
+          if (patientCount === 0) return null;
+
+          const semuaPasienStr = logbook.daftar_tindakan.map(formatPatientName).join(', ');
+          let deskripsi = '';
+
+          switch (pointNum) {
+            case 1:
+              deskripsi = `Melakukan asesmen awal dan lanjutan serta memberikan edukasi kepada pasien ${semuaPasienStr}`;
+              break;
+            case 2:
+              deskripsi = `Melaksanakan fungsi advokasi dan kolaborasi dengan mendampingi visite DPJP kepada pasien ${semuaPasienStr}`;
+              break;
+            case 3:
+              deskripsi = `Melakukan dokumentasi asuhan dalam rekam medis dengan tepat dan lengkap sesuai standar kepada pasien ${semuaPasienStr}`;
+              break;
+            case 4:
+              deskripsi = generatePoint4Text(logbook.daftar_tindakan);
+              break;
+            case 5:
+              deskripsi = `Melakukan monitoring EWS dan pengelolaan pasien kepada ${semuaPasienStr}`;
+              break;
+            default:
+              deskripsi = '-';
+          }
           
           return {
             tanggal: logbook.tanggal_dinas,
-            deskripsi: patientCount > 0 ? pointDef.prefix + patientNames : '-',
+            deskripsi,
             jumlahKegiatan: patientCount
           };
-        }).filter(d => d.jumlahKegiatan > 0);
+        }).filter(d => d !== null);
         
         setMonthlyData(processedData);
         
@@ -168,13 +256,11 @@ const ERemunerasiPage = () => {
     toast.success(`${label} berhasil disalin`);
   };
 
-  const formatDate = (dateStr) => {
-    return new Date(dateStr).toLocaleDateString('id-ID', {
-      weekday: 'long',
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric'
-    });
+  const copyAllPoints = () => {
+    const fullText = generatedPoints.map(p => 
+      `Point ${p.point}: ${p.title}\n${p.generatedText}`
+    ).join('\n\n');
+    copyToClipboard(fullText, 'Semua poin e-Remunerasi');
   };
 
   return (
@@ -239,38 +325,78 @@ const ERemunerasiPage = () => {
             </CardContent>
           </Card>
 
+          {/* Summary Card */}
+          {logbookData && (
+            <Card className="border-0 shadow-card bg-gradient-to-br from-teal-50 to-emerald-50">
+              <CardContent className="p-4">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-teal-600 flex items-center justify-center shrink-0">
+                      <Calendar className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                      <p className="font-heading font-semibold text-slate-900 text-sm md:text-base">
+                        {new Date(selectedDate).toLocaleDateString('id-ID', {
+                          weekday: 'long',
+                          day: 'numeric',
+                          month: 'long',
+                          year: 'numeric'
+                        })}
+                      </p>
+                      <p className="text-xs md:text-sm text-slate-600">
+                        Shift {logbookData?.shift} | {logbookData?.daftar_tindakan?.length || 0} pasien
+                      </p>
+                    </div>
+                  </div>
+                  {generatedPoints.length > 0 && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={copyAllPoints}
+                      data-testid="btn-copy-all-remun"
+                      className="rounded-full text-xs md:text-sm"
+                    >
+                      <Copy className="w-3.5 h-3.5 mr-1.5" />
+                      Salin Semua ({generatedPoints.length} Poin)
+                    </Button>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Generated Points */}
           {generatedPoints.length > 0 ? (
             <div className="space-y-3 md:space-y-4">
               {generatedPoints.map((point, idx) => (
                 <Card key={idx} className="border-0 shadow-card bg-white">
                   <CardHeader className="pb-2 p-3 md:p-4 md:pb-2">
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                      <CardTitle className="text-sm md:text-base font-heading">
-                        Point {point.point}: {point.title}
-                      </CardTitle>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs md:text-sm text-slate-500">
-                          Kegiatan: <strong className="text-teal-600">{point.jumlahKegiatan}</strong>
+                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
+                      <div className="flex items-start gap-2">
+                        <span className="inline-flex items-center justify-center min-w-[28px] h-7 px-2 rounded-lg text-xs font-bold bg-teal-100 text-teal-700">
+                          {point.point}
                         </span>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => copyToClipboard(point.generatedText, `Point ${point.point}`)}
-                          data-testid={`btn-copy-point-${point.point}`}
-                          className="rounded-full text-xs h-8"
-                        >
-                          <Copy className="w-3.5 h-3.5 mr-1" />
-                          Copy
-                        </Button>
+                        <CardTitle className="text-xs md:text-sm font-heading leading-tight">
+                          {point.title}
+                        </CardTitle>
                       </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => copyToClipboard(point.generatedText, `Point ${point.point}`)}
+                        data-testid={`btn-copy-point-${point.point}`}
+                        className="rounded-full text-xs h-8 shrink-0"
+                      >
+                        <Copy className="w-3.5 h-3.5 mr-1" />
+                        Copy
+                      </Button>
                     </div>
                   </CardHeader>
                   <CardContent className="p-3 md:p-4 pt-0 md:pt-0">
                     <Textarea
                       value={point.generatedText}
                       readOnly
-                      className="min-h-[70px] md:min-h-[80px] text-xs md:text-sm bg-slate-50 resize-none"
+                      className={`text-xs md:text-sm bg-slate-50 resize-none ${point.isMultiLine ? 'min-h-[120px]' : 'min-h-[70px]'}`}
                     />
                   </CardContent>
                 </Card>
@@ -281,6 +407,7 @@ const ERemunerasiPage = () => {
               <CardContent className="p-8 md:p-12 text-center text-slate-400">
                 <ClipboardList className="w-10 h-10 md:w-12 md:h-12 mx-auto mb-3 md:mb-4 opacity-50" />
                 <p className="text-sm md:text-base">Pilih tanggal dan klik "Generate" untuk membuat laporan</p>
+                <p className="text-xs mt-2">Laporan akan menghasilkan 5 poin sesuai format standar rumah sakit</p>
               </CardContent>
             </Card>
           )}
@@ -328,7 +455,7 @@ const ERemunerasiPage = () => {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {EREMUNERASI_POINTS.map((point) => (
+                      {POINT_DEFINITIONS.map((point) => (
                         <SelectItem key={point.point} value={point.point.toString()}>
                           Point {point.point}
                         </SelectItem>
@@ -357,8 +484,11 @@ const ERemunerasiPage = () => {
           <Card className="border-0 shadow-card bg-white overflow-hidden">
             <CardHeader className="pb-2 md:pb-3 p-3 md:p-4">
               <CardTitle className="text-sm md:text-lg font-heading">
-                Data Point {selectedPoint} - {MONTHS.find(m => m.value === selectedMonth)?.label} {selectedYear}
+                Point {selectedPoint}: {POINT_DEFINITIONS[parseInt(selectedPoint) - 1]?.title}
               </CardTitle>
+              <p className="text-xs text-slate-500 mt-1">
+                {MONTHS.find(m => m.value === selectedMonth)?.label} {selectedYear}
+              </p>
             </CardHeader>
             <CardContent className="p-0">
               {monthlyData.length > 0 ? (
@@ -375,20 +505,20 @@ const ERemunerasiPage = () => {
                     <TableBody>
                       {monthlyData.map((row, idx) => (
                         <TableRow key={idx}>
-                          <TableCell className="font-medium text-xs md:text-sm">
+                          <TableCell className="font-medium text-xs md:text-sm align-top">
                             {new Date(row.tanggal).toLocaleDateString('id-ID', {
                               weekday: 'short',
                               day: 'numeric',
                               month: 'short'
                             })}
                           </TableCell>
-                          <TableCell className="text-xs md:text-sm text-slate-700 max-w-md">
-                            <div className="line-clamp-2">{row.deskripsi}</div>
+                          <TableCell className="text-xs md:text-sm text-slate-700">
+                            <pre className="whitespace-pre-wrap font-sans">{row.deskripsi}</pre>
                           </TableCell>
-                          <TableCell className="text-center font-semibold text-teal-600 text-xs md:text-sm">
+                          <TableCell className="text-center font-semibold text-teal-600 text-xs md:text-sm align-top">
                             {row.jumlahKegiatan}
                           </TableCell>
-                          <TableCell>
+                          <TableCell className="align-top">
                             <Button
                               variant="ghost"
                               size="icon"
