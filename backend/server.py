@@ -80,30 +80,34 @@ class PatientCreate(BaseModel):
     no_billing: Optional[str] = None
     diagnosa: Optional[str] = None
 
+class JenisPasien(str, Enum):
+    PASIEN_BARU = "PASIEN_BARU"
+    PASIEN_LAMA = "PASIEN_LAMA"
+    PASIEN_PULANG = "PASIEN_PULANG"
+
 class TindakanItem(BaseModel):
     patient_id: str
     nama_pasien: str
     no_rm: str
     no_billing: Optional[str] = None
     diagnosa: Optional[str] = None
+    jenis_pasien: JenisPasien = JenisPasien.PASIEN_LAMA
     keterangan_tindakan: List[str] = []
     catatan_lainnya: Optional[str] = None
-    # 15 Toggle switches
+    # 13 Toggle switches (exactly as specified)
     oksigenasi: bool = False
     perawatan_luka_sederhana: bool = False
     pre_pasca_op: bool = False
     kompres_terbuka: bool = False
     memasang_infus_baru: bool = False
     memberikan_cairan_infus: bool = False
-    ngt: bool = False
+    memasang_ngt: bool = False
     transfusi_darah: bool = False
-    injeksi: bool = False
     nebu: bool = False
     memasang_dc_kateter: bool = False
     koreksi_caglukonas: bool = False
     koreksi_kcl: bool = False
     uji_lab: bool = False
-    pasien_baru_pulang: bool = False
 
 class Logbook(BaseModel):
     model_config = ConfigDict(extra="ignore")
