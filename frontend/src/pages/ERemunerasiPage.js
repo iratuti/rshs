@@ -178,31 +178,31 @@ const ERemunerasiPage = () => {
   };
 
   return (
-    <div className="space-y-6 animate-slide-in">
+    <div className="space-y-4 md:space-y-6 animate-slide-in">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-heading font-bold text-slate-900">e-Remunerasi</h1>
-        <p className="text-slate-500 text-sm mt-1">Generate laporan e-Remunerasi dari data logbook</p>
+        <h1 className="text-xl md:text-2xl font-heading font-bold text-slate-900">e-Remunerasi</h1>
+        <p className="text-slate-500 text-xs md:text-sm mt-0.5">Generate laporan e-Remunerasi dari data logbook</p>
       </div>
 
       {/* Mode Toggle */}
       <Tabs value={activeMode} onValueChange={setActiveMode} className="w-full">
-        <TabsList className="grid w-full grid-cols-2 h-12 bg-slate-100 rounded-xl p-1">
+        <TabsList className="grid w-full grid-cols-2 h-10 md:h-12 bg-slate-100 rounded-xl p-1">
           <TabsTrigger 
             value="per-nilai" 
             data-testid="tab-per-nilai"
-            className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm"
+            className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm text-xs md:text-sm"
           >
-            <Calendar className="w-4 h-4 mr-2" />
-            Tampilan Per Nilai
+            <Calendar className="w-3.5 h-3.5 md:w-4 md:h-4 mr-1 md:mr-2" />
+            <span className="hidden sm:inline">Tampilan</span> Per Nilai
           </TabsTrigger>
           <TabsTrigger 
             value="per-tanggal"
             data-testid="tab-per-tanggal"
-            className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm"
+            className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm text-xs md:text-sm"
           >
-            <FileText className="w-4 h-4 mr-2" />
-            Tampilan Per Tanggal
+            <FileText className="w-3.5 h-3.5 md:w-4 md:h-4 mr-1 md:mr-2" />
+            <span className="hidden sm:inline">Tampilan</span> Per Tanggal
           </TabsTrigger>
         </TabsList>
         
