@@ -625,7 +625,8 @@ async def get_admin_stats(request: Request):
 @api_router.post("/billing/create-transaction")
 async def create_transaction(request: Request):
     """Create Midtrans transaction (PLACEHOLDER)"""
-    user = await get_current_user(request)
+    # Verify user is authenticated
+    await get_current_user(request)
     
     # PLACEHOLDER: This would integrate with Midtrans Snap
     # For now, return mock data
@@ -638,7 +639,8 @@ async def create_transaction(request: Request):
 @api_router.post("/webhook/midtrans")
 async def midtrans_webhook(request: Request):
     """Midtrans webhook handler (PLACEHOLDER)"""
-    body = await request.json()
+    # PLACEHOLDER: Process webhook data
+    _ = await request.json()
     
     # PLACEHOLDER: Validate signature and update subscription status
     # transaction_status = body.get("transaction_status")
