@@ -94,3 +94,29 @@ Building "SepulangDinas" - a SaaS platform for Indonesian hospital nurses to aut
 2. Add PWA manifest.json and service worker for installability
 3. Implement PDF/CSV export functionality
 4. Add more comprehensive admin analytics
+
+## Phase 2 Implementation (Feb 26, 2024)
+
+### UI Revisions
+- [x] Master Data Pasien page at /dashboard/pasien
+- [x] Search, Import CSV, Export CSV, Print PDF buttons (placeholders)
+- [x] Modal title changed to "Tambah Catatan Kegiatan"
+- [x] Status Pasien radio group (PASIEN BARU, PASIEN LAMA, PASIEN PULANG)
+- [x] 13 toggle switches for Tindakan Spesifik
+
+### e-Kinerja Generator Engine
+- [x] Processes patients by category (Baru, Lama, Pulang)
+- [x] Generates text points based on patient categories:
+  - ALL PASIEN: Points 10, 11, 13, 16, 17, 18, 22, 24, 27
+  - PASIEN BARU: Points 1, 2, 5
+  - PASIEN PULANG: Points 4, 25
+  - ABSENSI: Points 28, 29
+- [x] Copy individual points or all points
+- [x] Category badges (PASIEN BARU, PASIEN PULANG, SEMUA PASIEN, ABSENSI)
+
+### Schema Updates
+- [x] Added jenis_pasien enum (PASIEN_BARU, PASIEN_LAMA, PASIEN_PULANG)
+- [x] Updated TindakanItem with 13 toggles
+
+### Mocked Features
+- Import CSV, Export CSV, Print PDF buttons are placeholders
