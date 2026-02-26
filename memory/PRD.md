@@ -38,11 +38,17 @@ Building "SepulangDinas" - a SaaS platform for Indonesian hospital nurses to aut
 - [x] Admin endpoints (users, tickets, stats)
 - [x] Midtrans billing placeholder/mock
 
-### Frontend (React)
+### Frontend (React) - MAJOR UPDATE
 - [x] Login page with Demo buttons (user/admin)
 - [x] Dashboard layout with sidebar (desktop) and mobile header + bottom nav (mobile)
 - [x] **Modal Scrollable Fix** - Modal now has `max-h-[85vh] overflow-y-auto` for proper scrolling
-- [x] Input Logbook page with:
+- [x] **Input Logbook page - COMPLETE REWRITE**:
+  - **DATE-DRIVEN FLOW**: Date picker in header controls which logbook is displayed
+  - **CONDITIONAL RENDERING**: If no shift data, shows warning "Silakan rekam data shift..." and hides patient list
+  - **DUPLICATE PREVENTION**: Cannot add same patient twice for same date
+  - **CRUD Actions**: View (Eye), Edit (Pencil), Delete (Trash) buttons on each patient
+  - **Edit Modal**: Pre-fills ALL fields (patient, status, ketergantungan, checkboxes, toggles)
+  - **View Modal**: Read-only view of patient details
   - Shift info form (tanggal, shift, jam datang/pulang)
   - Add tindakan modal with patient search
   - Status Pasien radio group (Pasien Baru, Lama, Pulang)
@@ -50,12 +56,17 @@ Building "SepulangDinas" - a SaaS platform for Indonesian hospital nurses to aut
   - 15 keterangan checkboxes
   - 13 toggle switches for specific actions (NOW VISIBLE via scrolling)
   - Catatan lainnya textarea
-- [x] e-Kinerja page with:
-  - Date picker for historical data
+- [x] **e-Kinerja page - MAJOR UPDATE**:
+  - **DUAL VIEW MODE**: Tabs for "Tampilan Per Nilai" and "Tampilan Per Tanggal"
+  - **NEW Points 6, 7, 8 added** (SEMUA PASIEN category):
+    - Point 6: 5 sub-lines (pengkajian, perencanaan, intervensi, implementasi, evaluasi)
+    - Point 7: 1 sub-line (visit)
+    - Point 8: 7 sub-lines (EMR documentation)
   - Sub-point splitting (multi-line points split into individual copyable cards)
   - Category badges (PASIEN BARU, PASIEN PULANG, SEMUA PASIEN, ABSENSI)
-  - Individual copy buttons per sub-point
+  - Individual copy buttons per sub-point (38 total buttons)
   - "Salin Semua" button
+  - Per Tanggal mode: Monthly table by selected point
 - [x] **e-Remunerasi page - LOGIC OVERHAULED** with:
   - Two modes: Per Nilai (by date) and Per Tanggal (by month/point)
   - Exact 5-point format as per Indonesian hospital standard:
@@ -65,7 +76,9 @@ Building "SepulangDinas" - a SaaS platform for Indonesian hospital nurses to aut
     - Point 4: Tindakan Keperawatan (grouped by 13 specific actions)
     - Point 5: Monitoring EWS
   - Point 4 dynamically groups patients by specific actions performed
-- [x] Rekap Logbook page with:
+- [x] **Rekap Logbook page - FIXED**:
+  - **KETERGANTUNGAN column now shows ADL values** (Self Care, Partial Care, Total Care)
+  - Previously showed BARU/LAMA/PULANG (incorrect)
   - Month/year filter
   - Spreadsheet-style table with all required columns
   - Export CSV and Print buttons (mocked)
