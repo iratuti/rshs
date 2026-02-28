@@ -1,11 +1,15 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Calendar, ChevronLeft, ChevronRight, FileDown, Printer } from 'lucide-react';
+import { Calendar, ChevronLeft, ChevronRight, FileDown, Printer, Loader2 } from 'lucide-react';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import Papa from 'papaparse';
+import { saveAs } from 'file-saver';
 
 const TINDAKAN_LABELS: { [key: string]: string } = {
   oksigenasi: 'OKSIGENASI',
@@ -78,8 +82,10 @@ interface FlattenedRow {
 export default function RekapLogbookPage() {
   const [logbooks, setLogbooks] = useState<Logbook[]>([]);
   const [loading, setLoading] = useState(true);
+  const [exporting, setExporting] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const tableRef = useRef<HTMLTableElement>(null);
 
   const currentYear = new Date().getFullYear();
   const years = Array.from({ length: 5 }, (_, i) => currentYear - i);
@@ -121,14 +127,6 @@ export default function RekapLogbookPage() {
     }
   };
 
-  const handleExportCSV = () => {
-    toast.info('Fitur Export CSV akan segera hadir');
-  };
-
-  const handlePrint = () => {
-    window.print();
-  };
-
   const buildKeterangan = (tindakan: TindakanItem): string => {
     const parts: string[] = [];
     if (tindakan.keterangan_tindakan?.length) {
@@ -168,6 +166,114 @@ export default function RekapLogbookPage() {
     }
   });
 
+  const handleExportCSV = () => {
+    if (flattenedRows.length === 0) {
+      toast.error('Tidak ada data untuk di-export');
+      return;
+    }
+
+    setExporting(true);
+    try {
+      const csvData = flattenedRows.map(row => ({
+        'No': row.rowNum,
+        'Tanggal': new Date(row.tanggal).toLocaleDateString('id-ID'),
+        'Shift': row.shift,
+        'Nama Pasien': row.nama,
+        'No. RM': row.noRM,
+        'No. Billing': row.noBilling,
+        'Diagnosa': row.diagnosa,
+        'Ketergantungan': row.ketergantungan,
+        'Keterangan': row.keterangan
+      }));
+
+      const csv = Papa.unparse(csvData);
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+      const monthName = MONTHS.find(m => m.value === selectedMonth)?.label;
+      saveAs(blob, `rekap-logbook-${monthName}-${selectedYear}.csv`);
+      toast.success('Export CSV berhasil!');
+    } catch (error) {
+      toast.error('Gagal export CSV');
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const handleExportPDF = () => {
+    if (flattenedRows.length === 0) {
+      toast.error('Tidak ada data untuk di-export');
+      return;
+    }
+
+    setExporting(true);
+    try {
+      const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+      const monthName = MONTHS.find(m => m.value === selectedMonth)?.label;
+      
+      // Title
+      doc.setFontSize(16);
+      doc.setFont('helvetica', 'bold');
+      doc.text('REKAP LOGBOOK KEPERAWATAN', doc.internal.pageSize.width / 2, 15, { align: 'center' });
+      
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Periode: ${monthName} ${selectedYear}`, doc.internal.pageSize.width / 2, 22, { align: 'center' });
+
+      // Table data
+      const tableData = flattenedRows.map(row => [
+        row.rowNum.toString(),
+        new Date(row.tanggal).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' }),
+        row.shift,
+        row.nama,
+        row.noRM,
+        row.noBilling,
+        row.diagnosa,
+        row.ketergantungan,
+        row.keterangan.substring(0, 50) + (row.keterangan.length > 50 ? '...' : '')
+      ]);
+
+      autoTable(doc, {
+        startY: 28,
+        head: [['No', 'Tanggal', 'Shift', 'Nama', 'No. RM', 'No. Billing', 'Diagnosa', 'Ketergantungan', 'Keterangan']],
+        body: tableData,
+        styles: { fontSize: 8, cellPadding: 2 },
+        headStyles: { fillColor: [13, 148, 136], textColor: 255, fontStyle: 'bold' },
+        alternateRowStyles: { fillColor: [245, 245, 245] },
+        columnStyles: {
+          0: { cellWidth: 10 },
+          1: { cellWidth: 20 },
+          2: { cellWidth: 15 },
+          3: { cellWidth: 35 },
+          4: { cellWidth: 25 },
+          5: { cellWidth: 20 },
+          6: { cellWidth: 30 },
+          7: { cellWidth: 25 },
+          8: { cellWidth: 'auto' }
+        }
+      });
+
+      // Footer
+      const pageCount = doc.getNumberOfPages();
+      for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.setFontSize(8);
+        doc.text(`Halaman ${i} dari ${pageCount}`, doc.internal.pageSize.width - 20, doc.internal.pageSize.height - 10);
+        doc.text(`Dicetak: ${new Date().toLocaleDateString('id-ID')}`, 15, doc.internal.pageSize.height - 10);
+      }
+
+      doc.save(`rekap-logbook-${monthName}-${selectedYear}.pdf`);
+      toast.success('Export PDF berhasil!');
+    } catch (error) {
+      console.error(error);
+      toast.error('Gagal export PDF');
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const handlePrint = () => {
+    window.print();
+  };
+
   return (
     <div className="space-y-3 md:space-y-4 animate-slide-in">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 print:hidden">
@@ -176,9 +282,13 @@ export default function RekapLogbookPage() {
           <p className="text-slate-500 text-xs md:text-sm mt-0.5">Tampilan spreadsheet data logbook bulanan</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={handleExportCSV} data-testid="btn-export-csv" className="rounded-full text-xs md:text-sm h-8 md:h-9">
-            <FileDown className="w-3.5 h-3.5 md:w-4 md:h-4 mr-1" />
+          <Button variant="outline" size="sm" onClick={handleExportCSV} disabled={exporting || flattenedRows.length === 0} data-testid="btn-export-csv" className="rounded-full text-xs md:text-sm h-8 md:h-9">
+            {exporting ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : <FileDown className="w-3.5 h-3.5 md:w-4 md:h-4 mr-1" />}
             <span className="hidden sm:inline">Export</span> CSV
+          </Button>
+          <Button variant="outline" size="sm" onClick={handleExportPDF} disabled={exporting || flattenedRows.length === 0} data-testid="btn-export-pdf" className="rounded-full text-xs md:text-sm h-8 md:h-9">
+            {exporting ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : <FileDown className="w-3.5 h-3.5 md:w-4 md:h-4 mr-1" />}
+            PDF
           </Button>
           <Button variant="outline" size="sm" onClick={handlePrint} data-testid="btn-print" className="rounded-full text-xs md:text-sm h-8 md:h-9">
             <Printer className="w-3.5 h-3.5 md:w-4 md:h-4 mr-1" />
@@ -235,7 +345,7 @@ export default function RekapLogbookPage() {
             <p>Tidak ada data logbook untuk bulan ini</p>
           </div>
         ) : (
-          <table className="w-full border-collapse text-sm" style={{ borderSpacing: 0 }}>
+          <table ref={tableRef} className="w-full border-collapse text-sm" style={{ borderSpacing: 0 }}>
             <thead>
               <tr className="bg-slate-100">
                 <th className="border border-slate-300 px-2 py-2 text-left font-semibold w-24">TANGGAL</th>
