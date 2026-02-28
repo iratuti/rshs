@@ -503,6 +503,12 @@ export default function InputLogbookPage() {
                     </Command>
                   </PopoverContent>
                 </Popover>
+                {editIndex === null && (
+                  <Button variant="link" size="sm" className="p-0 h-auto text-teal-600 text-xs" onClick={() => setShowPatientModal(true)}>
+                    <Plus className="w-3 h-3 mr-1" />
+                    Tambah pasien baru
+                  </Button>
+                )}
               </div>
               <div className="space-y-2">
                 <Label className="text-sm font-medium">Status Pasien *</Label>
