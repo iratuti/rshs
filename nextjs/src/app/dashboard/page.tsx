@@ -95,7 +95,15 @@ const KETERANGAN_OPTIONS = [
   'Membantu melibatkan keluarga dalam perawatan pasien',
 ];
 
-const initialTindakanForm = {
+interface TindakanForm {
+  jenis_pasien: string;
+  ketergantungan: string;
+  keterangan_tindakan: string[];
+  catatan_lainnya: string;
+  [key: string]: string | string[] | boolean;
+}
+
+const initialTindakanForm: TindakanForm = {
   jenis_pasien: 'PASIEN_LAMA',
   ketergantungan: 'ADL_PARTIAL_CARE',
   keterangan_tindakan: [] as string[],
