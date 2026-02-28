@@ -92,6 +92,20 @@ The entire application has been successfully migrated from a separated MERN-like
 
 ---
 
+## 🛠 CRITICAL REGRESSION FIX COMPLETED (Feb 28, 2026)
+
+### Issues Fixed:
+1. **✅ Transparent Dropdown Fix** - Added `bg-white` and proper z-index to SelectContent component so dropdowns are readable
+2. **✅ "Tambah Pasien" Button Restored** - Added "Tambah pasien baru" link next to Patient Selection dropdown in the modal
+3. **✅ All Stubbed Pages Restored** - Full 1:1 conversion from CRA to Next.js App Router:
+   - `/dashboard/rekap` - Rekap Logbook with month selector, Export CSV, Print buttons, and full table view
+   - `/dashboard/pasien` - Master Data Pasien with CRUD, search, Import/Export CSV, Print PDF
+   - `/dashboard/billing` - Billing/Langganan with subscription status, pricing, and payment button
+   - `/dashboard/support` - Tiket Support with create ticket modal and ticket list
+   - `/dashboard/profile` - User profile with editable name/ruangan, avatar, and quick links
+
+---
+
 ## What's Been Implemented (Feb 28, 2026)
 
 ### Backend (FastAPI)
