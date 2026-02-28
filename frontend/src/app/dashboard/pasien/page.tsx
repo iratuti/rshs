@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -10,7 +10,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { Database, Plus, FileDown, Printer, Search, Edit, Trash2, Loader2 } from 'lucide-react';
+import { Database, Plus, FileDown, FileUp, Printer, Search, Edit, Trash2, Loader2, Upload } from 'lucide-react';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import Papa from 'papaparse';
+import { saveAs } from 'file-saver';
 
 interface Patient {
   patient_id: string;
@@ -25,8 +29,12 @@ export default function MasterDataPasienPage() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
   const [editingPatient, setEditingPatient] = useState<Patient | null>(null);
   const [saving, setSaving] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState({
     nama_pasien: '',
@@ -120,15 +128,154 @@ export default function MasterDataPasienPage() {
   };
 
   const handleExportCSV = () => {
-    toast.info('Fitur Export CSV akan segera hadir');
+    if (filteredPatients.length === 0) {
+      toast.error('Tidak ada data untuk di-export');
+      return;
+    }
+
+    setExporting(true);
+    try {
+      const csvData = filteredPatients.map((p, idx) => ({
+        'No': idx + 1,
+        'Nama Pasien': p.nama_pasien,
+        'No. RM': p.no_rm,
+        'No. Billing': p.no_billing || '',
+        'Diagnosa': p.diagnosa || ''
+      }));
+
+      const csv = Papa.unparse(csvData);
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+      saveAs(blob, `master-data-pasien-${new Date().toISOString().split('T')[0]}.csv`);
+      toast.success('Export CSV berhasil!');
+    } catch (error) {
+      toast.error('Gagal export CSV');
+    } finally {
+      setExporting(false);
+    }
   };
 
-  const handleImportCSV = () => {
-    toast.info('Fitur Import CSV akan segera hadir');
+  const handleImportCSV = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setImporting(true);
+    Papa.parse(file, {
+      header: true,
+      skipEmptyLines: true,
+      complete: async (results) => {
+        try {
+          const importedPatients = results.data as Record<string, string>[];
+          let successCount = 0;
+          let errorCount = 0;
+
+          for (const row of importedPatients) {
+            const patientData = {
+              nama_pasien: row['Nama Pasien'] || row['nama_pasien'] || '',
+              no_rm: row['No. RM'] || row['no_rm'] || '',
+              no_billing: row['No. Billing'] || row['no_billing'] || '',
+              diagnosa: row['Diagnosa'] || row['diagnosa'] || ''
+            };
+
+            if (!patientData.nama_pasien || !patientData.no_rm) {
+              errorCount++;
+              continue;
+            }
+
+            try {
+              const response = await fetch('/api/patients', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(patientData)
+              });
+              if (response.ok) {
+                successCount++;
+              } else {
+                errorCount++;
+              }
+            } catch {
+              errorCount++;
+            }
+          }
+
+          await fetchPatients();
+          toast.success(`Import selesai: ${successCount} berhasil, ${errorCount} gagal`);
+          setShowImportModal(false);
+        } catch (error) {
+          toast.error('Gagal mengimport data');
+        } finally {
+          setImporting(false);
+          if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+          }
+        }
+      },
+      error: () => {
+        toast.error('Gagal membaca file CSV');
+        setImporting(false);
+      }
+    });
   };
 
-  const handlePrint = () => {
-    toast.info('Fitur Print PDF akan segera hadir');
+  const handleExportPDF = () => {
+    if (filteredPatients.length === 0) {
+      toast.error('Tidak ada data untuk di-export');
+      return;
+    }
+
+    setExporting(true);
+    try {
+      const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      
+      // Title
+      doc.setFontSize(16);
+      doc.setFont('helvetica', 'bold');
+      doc.text('MASTER DATA PASIEN', doc.internal.pageSize.width / 2, 15, { align: 'center' });
+      
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Tanggal: ${new Date().toLocaleDateString('id-ID')}`, doc.internal.pageSize.width / 2, 22, { align: 'center' });
+
+      // Table data
+      const tableData = filteredPatients.map((p, idx) => [
+        (idx + 1).toString(),
+        p.nama_pasien,
+        p.no_rm,
+        p.no_billing || '-',
+        (p.diagnosa || '-').substring(0, 40) + ((p.diagnosa?.length || 0) > 40 ? '...' : '')
+      ]);
+
+      autoTable(doc, {
+        startY: 28,
+        head: [['No', 'Nama Pasien', 'No. RM', 'No. Billing', 'Diagnosa']],
+        body: tableData,
+        styles: { fontSize: 9, cellPadding: 3 },
+        headStyles: { fillColor: [13, 148, 136], textColor: 255, fontStyle: 'bold' },
+        alternateRowStyles: { fillColor: [245, 245, 245] },
+        columnStyles: {
+          0: { cellWidth: 12 },
+          1: { cellWidth: 45 },
+          2: { cellWidth: 30 },
+          3: { cellWidth: 30 },
+          4: { cellWidth: 'auto' }
+        }
+      });
+
+      // Footer
+      const pageCount = doc.getNumberOfPages();
+      for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.setFontSize(8);
+        doc.text(`Halaman ${i} dari ${pageCount}`, doc.internal.pageSize.width - 20, doc.internal.pageSize.height - 10);
+        doc.text(`Total: ${filteredPatients.length} pasien`, 15, doc.internal.pageSize.height - 10);
+      }
+
+      doc.save(`master-data-pasien-${new Date().toISOString().split('T')[0]}.pdf`);
+      toast.success('Export PDF berhasil!');
+    } catch (error) {
+      toast.error('Gagal export PDF');
+    } finally {
+      setExporting(false);
+    }
   };
 
   const filteredPatients = patients.filter(p =>
@@ -197,15 +344,50 @@ export default function MasterDataPasienPage() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               <Input placeholder="Cari nama atau No. RM..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} data-testid="input-search-pasien" className="pl-10 h-10" />
             </div>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={handleImportCSV} data-testid="btn-import-csv" className="rounded-full">
-                <FileDown className="w-4 h-4 mr-1" />Import CSV
+            <div className="flex gap-2 flex-wrap">
+              <Dialog open={showImportModal} onOpenChange={setShowImportModal}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="sm" data-testid="btn-import-csv" className="rounded-full">
+                    <FileUp className="w-4 h-4 mr-1" />Import CSV
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Import Data Pasien dari CSV</DialogTitle>
+                  </DialogHeader>
+                  <div className="py-4">
+                    <p className="text-sm text-slate-600 mb-4">
+                      Upload file CSV dengan kolom: <strong>Nama Pasien</strong>, <strong>No. RM</strong>, No. Billing, Diagnosa
+                    </p>
+                    <div className="border-2 border-dashed border-slate-200 rounded-lg p-6 text-center">
+                      <Upload className="w-8 h-8 mx-auto text-slate-400 mb-2" />
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept=".csv"
+                        onChange={handleImportCSV}
+                        className="hidden"
+                        id="csv-upload"
+                      />
+                      <label htmlFor="csv-upload" className="cursor-pointer">
+                        <span className="text-teal-600 hover:text-teal-700 font-medium">Pilih file CSV</span>
+                        <span className="text-slate-500"> atau drag & drop</span>
+                      </label>
+                    </div>
+                    {importing && (
+                      <div className="mt-4 flex items-center justify-center gap-2 text-teal-600">
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span>Mengimport data...</span>
+                      </div>
+                    )}
+                  </div>
+                </DialogContent>
+              </Dialog>
+              <Button variant="outline" size="sm" onClick={handleExportCSV} disabled={exporting || filteredPatients.length === 0} data-testid="btn-export-csv" className="rounded-full">
+                {exporting ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <FileDown className="w-4 h-4 mr-1" />}Export CSV
               </Button>
-              <Button variant="outline" size="sm" onClick={handleExportCSV} data-testid="btn-export-csv" className="rounded-full">
-                <FileDown className="w-4 h-4 mr-1" />Export CSV
-              </Button>
-              <Button variant="outline" size="sm" onClick={handlePrint} data-testid="btn-print-pdf" className="rounded-full">
-                <Printer className="w-4 h-4 mr-1" />Print PDF
+              <Button variant="outline" size="sm" onClick={handleExportPDF} disabled={exporting || filteredPatients.length === 0} data-testid="btn-export-pdf" className="rounded-full">
+                {exporting ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Printer className="w-4 h-4 mr-1" />}Export PDF
               </Button>
             </div>
           </div>
