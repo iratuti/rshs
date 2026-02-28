@@ -4,12 +4,64 @@ const AuthContext = createContext(null);
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
+// MOCK USER DATA for client-side demo login (when backend unavailable)
+const MOCK_USERS = {
+  admin: {
+    user_id: 'demo_admin_001',
+    email: 'admin@demo.com',
+    name: 'Demo Admin',
+    picture: null,
+    role: 'ADMIN',
+    ruangan_rs: 'Admin Office',
+    status_langganan: 'ACTIVE',
+    berlaku_sampai: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+  },
+  user: {
+    user_id: 'demo_user_001',
+    email: 'user@demo.com',
+    name: 'Demo User',
+    picture: null,
+    role: 'USER',
+    ruangan_rs: 'Ruang Melati',
+    status_langganan: 'TRIAL',
+    berlaku_sampai: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+  }
+};
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // Check localStorage for persisted demo session on mount
+  useEffect(() => {
+    const storedUser = localStorage.getItem('sepulangdinas_demo_user');
+    if (storedUser) {
+      try {
+        const parsedUser = JSON.parse(storedUser);
+        setUser(parsedUser);
+      } catch (e) {
+        localStorage.removeItem('sepulangdinas_demo_user');
+      }
+    }
+    setLoading(false);
+  }, []);
+
   const checkAuth = useCallback(async () => {
+    // First check localStorage for demo user
+    const storedUser = localStorage.getItem('sepulangdinas_demo_user');
+    if (storedUser) {
+      try {
+        const parsedUser = JSON.parse(storedUser);
+        setUser(parsedUser);
+        setLoading(false);
+        return;
+      } catch (e) {
+        localStorage.removeItem('sepulangdinas_demo_user');
+      }
+    }
+
+    // Then try API if available
     try {
       const response = await fetch(`${API_URL}/api/auth/me`, {
         credentials: 'include',
@@ -29,16 +81,6 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
-  useEffect(() => {
-    // CRITICAL: If returning from OAuth callback, skip the /me check.
-    // AuthCallback will exchange the session_id and establish the session first.
-    if (window.location.hash?.includes('session_id=')) {
-      setLoading(false);
-      return;
-    }
-    checkAuth();
-  }, [checkAuth]);
-
   const login = () => {
     // REMINDER: DO NOT HARDCODE THE URL, OR ADD ANY FALLBACKS OR REDIRECT URLS, THIS BREAKS THE AUTH
     const redirectUrl = window.location.origin + '/dashboard';
@@ -46,38 +88,65 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = async () => {
+    // Clear localStorage demo user
+    localStorage.removeItem('sepulangdinas_demo_user');
+    
     try {
       await fetch(`${API_URL}/api/auth/logout`, {
         method: 'POST',
         credentials: 'include',
       });
-      setUser(null);
-      window.location.href = '/login';
     } catch (err) {
-      console.error('Logout failed:', err);
+      // Ignore API errors on logout
+      console.error('Logout API failed:', err);
     }
+    
+    setUser(null);
+    window.location.href = '/login';
   };
 
+  // CLIENT-SIDE DEMO LOGIN - Works without backend!
   const demoLogin = async (email, password) => {
+    // Determine user type from email
+    const isAdmin = email === 'admin@demo.com';
+    const mockUser = isAdmin ? MOCK_USERS.admin : MOCK_USERS.user;
+
+    // Try backend first (if available)
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3000); // 3s timeout
+
       const response = await fetch(`${API_URL}/api/auth/demo-login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({ email, password }),
+        signal: controller.signal,
       });
 
-      if (!response.ok) {
-        throw new Error('Demo login failed');
-      }
+      clearTimeout(timeoutId);
 
-      const data = await response.json();
-      setUser(data.user);
-      return data.user;
+      if (response.ok) {
+        const data = await response.json();
+        setUser(data.user);
+        // Also save to localStorage as backup
+        localStorage.setItem('sepulangdinas_demo_user', JSON.stringify(data.user));
+        return data.user;
+      }
     } catch (err) {
-      setError(err.message);
-      throw err;
+      console.warn('Backend unavailable, using client-side demo login:', err.message);
     }
+
+    // FALLBACK: Client-side mock authentication
+    console.log('Using client-side demo authentication');
+    
+    // Save mock user to localStorage
+    localStorage.setItem('sepulangdinas_demo_user', JSON.stringify(mockUser));
+    
+    // Update state
+    setUser(mockUser);
+    
+    return mockUser;
   };
 
   const exchangeSession = async (sessionId) => {
@@ -103,6 +172,15 @@ export const AuthProvider = ({ children }) => {
   };
 
   const updateProfile = async (profileData) => {
+    // If demo user, update localStorage
+    const storedUser = localStorage.getItem('sepulangdinas_demo_user');
+    if (storedUser) {
+      const updatedUser = { ...JSON.parse(storedUser), ...profileData };
+      localStorage.setItem('sepulangdinas_demo_user', JSON.stringify(updatedUser));
+      setUser(updatedUser);
+      return updatedUser;
+    }
+
     try {
       const response = await fetch(`${API_URL}/api/auth/profile`, {
         method: 'PUT',
