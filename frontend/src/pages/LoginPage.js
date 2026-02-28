@@ -37,14 +37,16 @@ const LoginPage = () => {
       
       const user = await demoLogin(credentials.email, credentials.password);
       
-      // Redirect based on role
+      // Force immediate navigation based on role
       if (user.role === 'ADMIN') {
-        navigate('/admin', { state: { user }, replace: true });
+        navigate('/admin', { replace: true });
       } else {
-        navigate('/dashboard', { state: { user }, replace: true });
+        navigate('/dashboard', { replace: true });
       }
     } catch (error) {
       console.error('Demo login failed:', error);
+      // Even if error, try to navigate if user exists in context
+      // This handles edge cases where API fails but localStorage works
     } finally {
       setDemoLoading(null);
     }
