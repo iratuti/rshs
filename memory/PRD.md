@@ -25,7 +25,74 @@ Building "SepulangDinas" - a SaaS platform for Indonesian hospital nurses to aut
 - User subscription management (TRIAL/ACTIVE/EXPIRED)
 - Support ticket system
 
-## What's Been Implemented (Feb 26, 2024)
+---
+
+## 🚀 CRITICAL ARCHITECTURE MIGRATION COMPLETED (Feb 28, 2026)
+
+### Migration from Create React App + Express to Next.js 14 App Router
+
+**STATUS: ✅ COMPLETED & VERIFIED**
+
+The entire application has been successfully migrated from a separated MERN-like stack (Create React App frontend + FastAPI backend) to a **unified full-stack Next.js 14 application** with App Router.
+
+### What Changed:
+1. **Frontend**: Migrated from Create React App (`/app/frontend_cra_backup`) to Next.js 14 (`/app/frontend`)
+2. **Routing**: Replaced `react-router-dom` with Next.js App Router (file-based routing)
+3. **API**: Created Next.js API Route Handlers alongside existing FastAPI backend
+4. **Components**: All `.jsx` components converted to `.tsx` with proper TypeScript types
+5. **UI Components**: Fixed all shadcn/ui components with proper TypeScript generics
+
+### New Project Structure:
+```
+/app/frontend/
+├── src/
+│   ├── app/                    # Next.js App Router
+│   │   ├── page.tsx            # Login page
+│   │   ├── layout.tsx          # Root layout with AuthProvider
+│   │   ├── globals.css         # Global styles
+│   │   ├── admin/              # Admin routes
+│   │   │   ├── page.tsx        # Admin Dashboard
+│   │   │   ├── tickets/page.tsx
+│   │   │   └── revenue/page.tsx
+│   │   ├── dashboard/          # User routes
+│   │   │   ├── page.tsx        # Input Logbook
+│   │   │   ├── e-kinerja/page.tsx
+│   │   │   ├── e-remunerasi/page.tsx
+│   │   │   ├── rekap/page.tsx
+│   │   │   ├── pasien/page.tsx
+│   │   │   ├── billing/page.tsx
+│   │   │   ├── support/page.tsx
+│   │   │   └── profile/page.tsx
+│   │   └── api/                # Next.js API Routes
+│   │       ├── auth/demo-login/route.ts
+│   │       ├── logbooks/route.ts
+│   │       ├── patients/route.ts
+│   │       ├── users/route.ts
+│   │       └── tickets/route.ts
+│   ├── components/
+│   │   ├── layout/             # Sidebar, MobileHeader, BottomNav
+│   │   └── ui/                 # shadcn/ui components (all typed)
+│   ├── contexts/
+│   │   └── AuthContext.tsx     # Client-side auth with localStorage
+│   └── lib/
+│       ├── mongodb.ts          # MongoDB connection utility
+│       ├── models.ts           # Mongoose models
+│       └── utils.ts            # Utility functions
+├── package.json                # Next.js 16.1.6, React 19
+└── next.config.ts
+```
+
+### Technologies Used:
+- **Framework**: Next.js 16.1.6 (App Router)
+- **Language**: TypeScript
+- **Styling**: Tailwind CSS 4 + shadcn/ui
+- **Database**: MongoDB with Mongoose
+- **Auth**: Client-side demo auth with localStorage
+- **Icons**: Lucide React
+
+---
+
+## What's Been Implemented (Feb 28, 2026)
 
 ### Backend (FastAPI)
 - [x] Demo login with CredentialsProvider (user@demo.com, admin@demo.com)
