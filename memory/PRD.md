@@ -251,43 +251,81 @@ The entire application has been successfully migrated from a separated MERN-like
 
 ## Mocked Features
 - Midtrans payment integration (returns placeholder token)
-- Export PDF button (shows toast)
-- Export CSV button (shows toast)
 - Google Auth (pending credentials)
 
 ## Credentials
 - **Demo User**: user@demo.com / password (redirects to /dashboard)
 - **Demo Admin**: admin@demo.com / password (redirects to /admin)
 
+---
+
+## 🎉 P1 FEATURES COMPLETED (March 1, 2026)
+
+### Admin Ticket Management - ✅ COMPLETED & TESTED
+
+**Features Implemented:**
+- Admin can view all support tickets at `/admin/tickets`
+- Stats dashboard showing: Total Tiket, Menunggu, Diproses, Selesai
+- Searchable ticket list with columns: ID, Pengguna, Kategori, Subjek, Status, Tanggal, Aksi
+- Filter by status (Semua, Menunggu, Selesai tabs)
+- Click ticket to open detail modal showing:
+  - Ticket subject & status badge
+  - User info (name, email)
+  - Metadata (ID, category, date)
+  - Full user message
+  - Reply textarea for admin response
+  - Status change dropdown
+  - Delete & Close buttons
+- Reply functionality sends response to `/api/admin/tickets/{id}/reply`
+- Demo session authentication integrated between Next.js and FastAPI
+
+**Files:**
+- `/app/frontend/src/app/admin/tickets/page.tsx` - Admin tickets UI
+- `/app/backend/server.py` - Added demo session support in `get_session_from_cookie()`
+
+### Data Validation - ✅ COMPLETED & TESTED
+
+**Features Implemented:**
+- Zod validation schemas in `/app/frontend/src/lib/validation.ts`
+- React Hook Form integration with `zodResolver`
+- Patient form validation (Nama Pasien, No. RM required)
+- Support ticket form validation (Subjek, Pesan required)
+- Inline error messages under form fields
+- Toast notifications for first validation error
+- Red border highlighting on invalid fields
+
+**Test Results (100% Pass Rate):**
+- Admin Ticket Management: Login → Navigate → View list → View detail → Reply ✅
+- Patient validation: Empty form shows errors, valid data creates patient ✅
+- Support ticket validation: Empty form shows errors, valid data creates ticket ✅
+
+---
+
 ## Architecture
 ```
 /app
 ├── backend/
-│   ├── server.py        # FastAPI backend with all APIs
+│   ├── server.py        # FastAPI backend with all APIs + demo session support
 │   └── .env             # MongoDB credentials
 ├── frontend/
 │   └── src/
-│       ├── pages/
-│       │   ├── EKinerjaPage.js        # e-Kinerja with sub-point splitting
-│       │   ├── ERemunerasiPage.js     # e-Remunerasi with 2 modes
-│       │   ├── InputLogbookPage.js    # Modal with 13 toggles
-│       │   ├── RekapLogbookPage.js    # Spreadsheet view
+│       ├── app/
+│       │   ├── admin/tickets/page.tsx  # Admin ticket management
+│       │   ├── dashboard/pasien/page.tsx # Patient management with validation
+│       │   ├── dashboard/support/page.tsx # Support tickets with validation
 │       │   └── ...
+│       ├── lib/
+│       │   └── validation.ts  # Zod validation schemas
 │       ├── components/
-│       │   ├── layout/
-│       │   │   ├── DashboardLayout.js
-│       │   │   ├── Sidebar.js
-│       │   │   ├── MobileHeader.js    # Hamburger menu
-│       │   │   └── BottomNav.js
-│       │   └── ui/                    # Shadcn components
+│       │   └── ui/            # Shadcn components
 │       └── contexts/
-│           └── AuthContext.js
+│           └── AuthContext.tsx
 └── memory/
     └── PRD.md
 ```
 
 ## Next Tasks
-1. Implement PWA manifest.json and service worker
-2. Implement Export PDF/CSV functionality
-3. Complete admin ticket management (reply/close)
+1. Implement Midtrans Payment Integration for subscriptions
+2. Implement Google Auth Integration using NextAuth.js
+3. Minor: Add aria-describedby to DialogContent for accessibility
 4. Refine e-Remunerasi logic per original requirement
