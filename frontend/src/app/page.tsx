@@ -32,6 +32,19 @@ export default function LoginPage() {
     }
   ];
 
+  // REMINDER: DO NOT HARDCODE THE URL, OR ADD ANY FALLBACKS OR REDIRECT URLS, THIS BREAKS THE AUTH
+  const handleGoogleLogin = async () => {
+    setGoogleLoading(true);
+    try {
+      await signIn('google', { 
+        callbackUrl: '/dashboard'
+      });
+    } catch (error) {
+      console.error('Google login failed:', error);
+      setGoogleLoading(false);
+    }
+  };
+
   const handleDemoLogin = async (type: 'admin' | 'user') => {
     setDemoLoading(type);
     try {
