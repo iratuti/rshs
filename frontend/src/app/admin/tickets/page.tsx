@@ -127,10 +127,20 @@ export default function AdminTicketsPage() {
 
   const handleStatusChange = async (ticketId: string, newStatus: string) => {
     try {
-      const response = await fetch(`/api/tickets/${ticketId}`, {
+      // For closing a ticket, use the close endpoint
+      const endpoint = newStatus === 'CLOSED' 
+        ? `/api/admin/tickets/${ticketId}/close`
+        : `/api/admin/tickets/${ticketId}/reply`;
+      
+      const body = newStatus === 'CLOSED' 
+        ? {}
+        : { balasan_admin: selectedTicket?.balasan_admin || '' };
+      
+      const response = await fetch(endpoint, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: newStatus })
+        credentials: 'include',
+        body: JSON.stringify(body)
       });
 
       if (response.ok) {
