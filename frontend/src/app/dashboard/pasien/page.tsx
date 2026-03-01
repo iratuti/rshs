@@ -320,19 +320,57 @@ export default function MasterDataPasienPage() {
             <div className="space-y-4 py-4">
               <div className="space-y-2">
                 <Label htmlFor="nama_pasien">Nama Pasien *</Label>
-                <Input id="nama_pasien" placeholder="Masukkan nama pasien" value={formData.nama_pasien} onChange={(e) => setFormData({...formData, nama_pasien: e.target.value})} data-testid="input-nama-pasien" className="h-12" />
+                <Input 
+                  id="nama_pasien" 
+                  placeholder="Masukkan nama pasien" 
+                  value={formData.nama_pasien} 
+                  onChange={(e) => { setFormData({...formData, nama_pasien: e.target.value}); setFormErrors({...formErrors, nama_pasien: ''}); }} 
+                  data-testid="input-nama-pasien" 
+                  className={`h-12 ${formErrors.nama_pasien ? 'border-red-500 focus-visible:ring-red-500' : ''}`} 
+                />
+                {formErrors.nama_pasien && (
+                  <p className="text-xs text-red-500 flex items-center gap-1">
+                    <AlertCircle className="w-3 h-3" />{formErrors.nama_pasien}
+                  </p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="no_rm">No. RM *</Label>
-                <Input id="no_rm" placeholder="Masukkan nomor rekam medis" value={formData.no_rm} onChange={(e) => setFormData({...formData, no_rm: e.target.value})} data-testid="input-no-rm" className="h-12" />
+                <Input 
+                  id="no_rm" 
+                  placeholder="Masukkan nomor rekam medis" 
+                  value={formData.no_rm} 
+                  onChange={(e) => { setFormData({...formData, no_rm: e.target.value}); setFormErrors({...formErrors, no_rm: ''}); }} 
+                  data-testid="input-no-rm" 
+                  className={`h-12 ${formErrors.no_rm ? 'border-red-500 focus-visible:ring-red-500' : ''}`} 
+                />
+                {formErrors.no_rm && (
+                  <p className="text-xs text-red-500 flex items-center gap-1">
+                    <AlertCircle className="w-3 h-3" />{formErrors.no_rm}
+                  </p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="no_billing">No. Billing</Label>
-                <Input id="no_billing" placeholder="Masukkan nomor billing (opsional)" value={formData.no_billing} onChange={(e) => setFormData({...formData, no_billing: e.target.value})} data-testid="input-no-billing" className="h-12" />
+                <Input 
+                  id="no_billing" 
+                  placeholder="Masukkan nomor billing (opsional)" 
+                  value={formData.no_billing} 
+                  onChange={(e) => setFormData({...formData, no_billing: e.target.value})} 
+                  data-testid="input-no-billing" 
+                  className="h-12" 
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="diagnosa">Diagnosa</Label>
-                <Textarea id="diagnosa" placeholder="Masukkan diagnosa (opsional)" value={formData.diagnosa} onChange={(e) => setFormData({...formData, diagnosa: e.target.value})} data-testid="input-diagnosa" />
+                <Textarea 
+                  id="diagnosa" 
+                  placeholder="Masukkan diagnosa (opsional)" 
+                  value={formData.diagnosa} 
+                  onChange={(e) => setFormData({...formData, diagnosa: e.target.value})} 
+                  data-testid="input-diagnosa" 
+                />
+                <p className="text-xs text-slate-400">{formData.diagnosa?.length || 0}/500 karakter</p>
               </div>
             </div>
             <DialogFooter>
