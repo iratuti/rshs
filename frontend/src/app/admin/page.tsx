@@ -86,7 +86,7 @@ export default function AdminDashboard() {
                 <Users className="w-5 h-5 text-blue-600" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-slate-900">{stats.total}</p>
+                <p className="text-2xl font-bold text-slate-900">{userStats.total}</p>
                 <p className="text-xs text-slate-500">Total Users</p>
               </div>
             </div>
@@ -99,7 +99,7 @@ export default function AdminDashboard() {
                 <UserCheck className="w-5 h-5 text-emerald-600" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-slate-900">{stats.active}</p>
+                <p className="text-2xl font-bold text-slate-900">{userStats.active}</p>
                 <p className="text-xs text-slate-500">Active</p>
               </div>
             </div>
@@ -109,29 +109,49 @@ export default function AdminDashboard() {
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center">
-                <Users className="w-5 h-5 text-amber-600" />
+                <Clock className="w-5 h-5 text-amber-600" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-slate-900">{stats.trial}</p>
+                <p className="text-2xl font-bold text-slate-900">{userStats.trial}</p>
                 <p className="text-xs text-slate-500">Trial</p>
               </div>
             </div>
           </CardContent>
         </Card>
-        <Card className="border-0 shadow-card">
+        <Card className="border-0 shadow-card cursor-pointer hover:shadow-card-hover transition-shadow" onClick={() => router.push('/admin/tickets')}>
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-purple-100 flex items-center justify-center">
-                <Ticket className="w-5 h-5 text-purple-600" />
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${ticketStats.open > 0 ? 'bg-red-100' : 'bg-purple-100'}`}>
+                <MessageSquare className={`w-5 h-5 ${ticketStats.open > 0 ? 'text-red-600' : 'text-purple-600'}`} />
               </div>
               <div>
-                <p className="text-2xl font-bold text-slate-900">1</p>
+                <p className="text-2xl font-bold text-slate-900">{ticketStats.open}</p>
                 <p className="text-xs text-slate-500">Open Tickets</p>
               </div>
             </div>
           </CardContent>
         </Card>
       </div>
+
+      {/* Quick Actions */}
+      <Card className="border-0 shadow-card bg-gradient-to-br from-teal-50 to-emerald-50">
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-teal-100 flex items-center justify-center">
+                <MessageSquare className="w-5 h-5 text-teal-600" />
+              </div>
+              <div>
+                <p className="font-semibold text-slate-900">Manajemen Tiket Support</p>
+                <p className="text-sm text-slate-500">Lihat dan balas tiket dari pengguna</p>
+              </div>
+            </div>
+            <Button onClick={() => router.push('/admin/tickets')} className="bg-teal-600 hover:bg-teal-700">
+              Kelola Tiket <ArrowRight className="w-4 h-4 ml-2" />
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       <Card className="border-0 shadow-card">
         <CardHeader>
