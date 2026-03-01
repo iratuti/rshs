@@ -10,11 +10,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { Database, Plus, FileDown, FileUp, Printer, Search, Edit, Trash2, Loader2, Upload } from 'lucide-react';
+import { Database, Plus, FileDown, FileUp, Printer, Search, Edit, Trash2, Loader2, Upload, AlertCircle } from 'lucide-react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import Papa from 'papaparse';
 import { saveAs } from 'file-saver';
+import { validateForm, PatientValidationSchema } from '@/lib/validation';
 
 interface Patient {
   patient_id: string;
