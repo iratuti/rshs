@@ -310,6 +310,8 @@ The entire application has been successfully migrated from a separated MERN-like
 ├── frontend/
 │   └── src/
 │       ├── app/
+│       │   ├── api/auth/[...nextauth]/route.ts  # NextAuth.js API route
+│       │   ├── auth/error/page.tsx  # Custom auth error page
 │       │   ├── admin/tickets/page.tsx  # Admin ticket management
 │       │   ├── dashboard/pasien/page.tsx # Patient management with validation
 │       │   ├── dashboard/support/page.tsx # Support tickets with validation
@@ -317,15 +319,57 @@ The entire application has been successfully migrated from a separated MERN-like
 │       ├── lib/
 │       │   └── validation.ts  # Zod validation schemas
 │       ├── components/
+│       │   ├── providers/NextAuthProvider.tsx  # SessionProvider wrapper
 │       │   └── ui/            # Shadcn components
 │       └── contexts/
-│           └── AuthContext.tsx
+│           └── AuthContext.tsx  # Integrated with NextAuth session
 └── memory/
     └── PRD.md
 ```
 
+---
+
+## 🔐 NEXTAUTH GOOGLE PROVIDER IMPLEMENTED (March 1, 2026)
+
+### Status: ✅ IMPLEMENTED (Pending Google OAuth Credentials)
+
+**Features Implemented:**
+- NextAuth.js v4 with Google Provider configured
+- JWT-based session with custom role assignment
+- **Super Admin Magic Email:** `theomarhizal@gmail.com` automatically gets `admin` role
+- All other emails get `user` role
+- SessionProvider wrapper in root layout
+- Custom auth error page at `/auth/error`
+- Demo login still works for testing without Google credentials
+
+**Files Created:**
+- `/app/frontend/src/app/api/auth/[...nextauth]/route.ts` - NextAuth API route
+- `/app/frontend/src/components/providers/NextAuthProvider.tsx` - SessionProvider wrapper
+- `/app/frontend/src/app/auth/error/page.tsx` - Custom error page
+
+**Files Modified:**
+- `/app/frontend/src/app/layout.tsx` - Added NextAuthProvider
+- `/app/frontend/src/contexts/AuthContext.tsx` - Integrated with useSession
+- `/app/frontend/src/app/page.tsx` - Added signIn('google') to Google button
+- `/app/frontend/.env.local` - Added NEXTAUTH_URL, NEXTAUTH_SECRET placeholders
+
+**Required Setup by User:**
+1. Go to Google Cloud Console (console.cloud.google.com)
+2. Create OAuth 2.0 credentials
+3. Add Authorized JavaScript Origins:
+   - `https://admin-tiket-support.preview.emergentagent.com`
+4. Add Authorized redirect URIs:
+   - `https://admin-tiket-support.preview.emergentagent.com/api/auth/callback/google`
+5. Copy credentials to `/app/frontend/.env.local`:
+   ```
+   GOOGLE_CLIENT_ID=your_client_id_here
+   GOOGLE_CLIENT_SECRET=your_client_secret_here
+   ```
+6. Restart frontend: `sudo supervisorctl restart frontend`
+
+---
+
 ## Next Tasks
 1. Implement Midtrans Payment Integration for subscriptions
-2. Implement Google Auth Integration using NextAuth.js
-3. Minor: Add aria-describedby to DialogContent for accessibility
-4. Refine e-Remunerasi logic per original requirement
+2. Minor: Add aria-describedby to DialogContent for accessibility
+3. Refine e-Remunerasi logic per original requirement
