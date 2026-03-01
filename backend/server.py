@@ -173,6 +173,15 @@ DEMO_ACCOUNTS = {
 
 # ==================== AUTH HELPERS ====================
 async def get_session_from_cookie(request: Request) -> Optional[dict]:
+    # First check for demo session cookie (from Next.js demo login)
+    demo_session = request.cookies.get("session")
+    if demo_session:
+        if demo_session == "demo_admin@demo.com" or demo_session.startswith("demo_admin"):
+            return {"user_id": "demo_admin_001", "role": "ADMIN"}
+        elif demo_session == "demo_user@demo.com" or demo_session.startswith("demo_user"):
+            return {"user_id": "demo_user_001", "role": "USER"}
+    
+    # Then check for regular session_token
     session_token = request.cookies.get("session_token")
     if not session_token:
         auth_header = request.headers.get("Authorization")
