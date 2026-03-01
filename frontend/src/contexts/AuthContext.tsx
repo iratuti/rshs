@@ -1,6 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import { useSession, signIn, signOut } from 'next-auth/react';
 
 interface User {
   user_id: string;
@@ -52,33 +53,60 @@ const MOCK_USERS: Record<string, User> = {
 const STORAGE_KEY = 'sepulangdinas_user';
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { data: session, status } = useSession();
+  const [demoUser, setDemoUser] = useState<User | null>(null);
   const [error, setError] = useState<string | null>(null);
+  
+  // Combine NextAuth session with demo user
+  const user: User | null = session?.user 
+    ? {
+        user_id: session.user.id || session.user.email || 'unknown',
+        email: session.user.email || '',
+        name: session.user.name || '',
+        picture: session.user.image || undefined,
+        role: session.user.role === 'admin' ? 'ADMIN' : 'USER',
+        ruangan_rs: session.user.role === 'admin' ? 'Admin Office' : 'Ruang Melati',
+        status_langganan: 'ACTIVE',
+        berlaku_sampai: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+      }
+    : demoUser;
 
-  // Check localStorage on mount
+  const loading = status === 'loading';
+
+  // Check localStorage on mount for demo user
   useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      try {
-        setUser(JSON.parse(stored));
-      } catch {
-        localStorage.removeItem(STORAGE_KEY);
+    if (!session) {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        try {
+          setDemoUser(JSON.parse(stored));
+        } catch {
+          localStorage.removeItem(STORAGE_KEY);
+        }
       }
     }
-    setLoading(false);
-  }, []);
+  }, [session]);
 
+  // REMINDER: DO NOT HARDCODE THE URL, OR ADD ANY FALLBACKS OR REDIRECT URLS, THIS BREAKS THE AUTH
   const login = useCallback(() => {
-    const redirectUrl = window.location.origin + '/dashboard';
-    window.location.href = `https://auth.emergentagent.com/?redirect=${encodeURIComponent(redirectUrl)}`;
+    // Use NextAuth Google sign in
+    signIn('google', { 
+      callbackUrl: '/dashboard'
+    });
   }, []);
 
   const logout = useCallback(() => {
+    // Clear demo user from localStorage
     localStorage.removeItem(STORAGE_KEY);
-    setUser(null);
-    window.location.href = '/';
-  }, []);
+    setDemoUser(null);
+    
+    // If using NextAuth session, sign out
+    if (session) {
+      signOut({ callbackUrl: '/' });
+    } else {
+      window.location.href = '/';
+    }
+  }, [session]);
 
   const demoLogin = useCallback(async (email: string, password: string): Promise<User> => {
     const isAdmin = email === 'admin@demo.com';
@@ -101,7 +129,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (response.ok) {
         const data = await response.json();
         localStorage.setItem(STORAGE_KEY, JSON.stringify(data.user));
-        setUser(data.user);
+        setDemoUser(data.user);
         return data.user;
       }
     } catch {
@@ -110,7 +138,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // Fallback to client-side mock
     localStorage.setItem(STORAGE_KEY, JSON.stringify(mockUser));
-    setUser(mockUser);
+    setDemoUser(mockUser);
     return mockUser;
   }, []);
 
@@ -119,7 +147,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     
     const updatedUser = { ...user, ...data };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedUser));
-    setUser(updatedUser);
+    setDemoUser(updatedUser);
     return updatedUser;
   }, [user]);
 
