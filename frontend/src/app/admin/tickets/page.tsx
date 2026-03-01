@@ -206,8 +206,8 @@ export default function AdminTicketsPage() {
     
     const matchesTab = 
       activeTab === 'all' ? true :
-      activeTab === 'open' ? ticket.status === 'OPEN' :
-      activeTab === 'resolved' ? (ticket.status === 'RESOLVED' || ticket.status === 'CLOSED') :
+      activeTab === 'open' ? isOpenStatus(ticket.status) :
+      activeTab === 'resolved' ? isClosedStatus(ticket.status) :
       true;
     
     return matchesSearch && matchesStatus && matchesTab;
