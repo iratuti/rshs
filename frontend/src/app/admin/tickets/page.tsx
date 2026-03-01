@@ -100,12 +100,13 @@ export default function AdminTicketsPage() {
 
     setSubmitting(true);
     try {
-      const response = await fetch(`/api/tickets/${selectedTicket.ticket_id}`, {
+      // Use FastAPI backend endpoint for reply
+      const response = await fetch(`/api/admin/tickets/${selectedTicket.ticket_id}/reply`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ 
-          balasan_admin: replyText,
-          status: 'RESOLVED'
+          balasan_admin: replyText
         })
       });
 
