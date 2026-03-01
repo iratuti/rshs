@@ -160,7 +160,10 @@ export default function AdminTicketsPage() {
     if (!window.confirm('Yakin ingin menghapus tiket ini?')) return;
 
     try {
-      const response = await fetch(`/api/tickets/${ticketId}`, { method: 'DELETE' });
+      const response = await fetch(`/api/admin/tickets/${ticketId}`, { 
+        method: 'DELETE',
+        credentials: 'include'
+      });
       if (response.ok) {
         setTickets(tickets.filter(t => t.ticket_id !== ticketId));
         setShowDetailModal(false);
@@ -168,6 +171,8 @@ export default function AdminTicketsPage() {
       }
     } catch (error) {
       toast.error('Gagal menghapus tiket');
+    }
+  };
     }
   };
 
