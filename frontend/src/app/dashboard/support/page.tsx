@@ -140,11 +140,38 @@ export default function SupportPage() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="subjek">Subjek *</Label>
-                <Input id="subjek" placeholder="Tuliskan judul masalah Anda" value={newTicket.subjek} onChange={(e) => setNewTicket({...newTicket, subjek: e.target.value})} data-testid="input-subjek" className="h-12" />
+                <Input 
+                  id="subjek" 
+                  placeholder="Tuliskan judul masalah Anda (min 5 karakter)" 
+                  value={newTicket.subjek} 
+                  onChange={(e) => { setNewTicket({...newTicket, subjek: e.target.value}); setFormErrors({...formErrors, subjek: ''}); }} 
+                  data-testid="input-subjek" 
+                  className={`h-12 ${formErrors.subjek ? 'border-red-500 focus-visible:ring-red-500' : ''}`} 
+                />
+                {formErrors.subjek && (
+                  <p className="text-xs text-red-500 flex items-center gap-1">
+                    <AlertCircle className="w-3 h-3" />{formErrors.subjek}
+                  </p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="pesan">Pesan *</Label>
-                <Textarea id="pesan" placeholder="Jelaskan masalah Anda secara detail..." value={newTicket.pesan_user} onChange={(e) => setNewTicket({...newTicket, pesan_user: e.target.value})} data-testid="textarea-pesan" className="min-h-[120px]" />
+                <Textarea 
+                  id="pesan" 
+                  placeholder="Jelaskan masalah Anda secara detail (min 10 karakter)..." 
+                  value={newTicket.pesan_user} 
+                  onChange={(e) => { setNewTicket({...newTicket, pesan_user: e.target.value}); setFormErrors({...formErrors, pesan_user: ''}); }} 
+                  data-testid="textarea-pesan" 
+                  className={`min-h-[120px] ${formErrors.pesan_user ? 'border-red-500 focus-visible:ring-red-500' : ''}`} 
+                />
+                <div className="flex justify-between">
+                  {formErrors.pesan_user ? (
+                    <p className="text-xs text-red-500 flex items-center gap-1">
+                      <AlertCircle className="w-3 h-3" />{formErrors.pesan_user}
+                    </p>
+                  ) : <span />}
+                  <p className="text-xs text-slate-400">{newTicket.pesan_user.length}/2000 karakter</p>
+                </div>
               </div>
             </div>
             <DialogFooter>
