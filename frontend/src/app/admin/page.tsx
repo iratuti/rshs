@@ -1,10 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Users, UserCheck, UserX, Ticket } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Users, UserCheck, UserX, Ticket, Clock, MessageSquare, ArrowRight } from 'lucide-react';
 
 interface User {
   user_id: string;
