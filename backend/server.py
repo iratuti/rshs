@@ -215,6 +215,8 @@ async def get_current_user(request: Request) -> User:
     if not session:
         raise HTTPException(status_code=401, detail="Not authenticated")
     
+    now = datetime.now(timezone.utc)
+    
     # For demo sessions, return demo user data directly
     if session.get("user_id") == "demo_admin_001":
         return User(
@@ -224,7 +226,9 @@ async def get_current_user(request: Request) -> User:
             role=UserRole.ADMIN,
             ruangan_rs="Admin Office",
             status_langganan=SubscriptionStatus.ACTIVE,
-            berlaku_sampai=(datetime.now(timezone.utc) + timedelta(days=30)).isoformat()
+            berlaku_sampai=(now + timedelta(days=30)).isoformat(),
+            created_at=now.isoformat(),
+            updated_at=now.isoformat()
         )
     elif session.get("user_id") == "demo_user_001":
         return User(
@@ -234,7 +238,9 @@ async def get_current_user(request: Request) -> User:
             role=UserRole.USER,
             ruangan_rs="Ruang Melati",
             status_langganan=SubscriptionStatus.TRIAL,
-            berlaku_sampai=(datetime.now(timezone.utc) + timedelta(days=7)).isoformat()
+            berlaku_sampai=(now + timedelta(days=7)).isoformat(),
+            created_at=now.isoformat(),
+            updated_at=now.isoformat()
         )
     
     user_doc = await db.users.find_one(
