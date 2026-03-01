@@ -2,15 +2,17 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { signIn } from 'next-auth/react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Stethoscope, Shield, Clock, FileText, UserCog, User, Loader2 } from 'lucide-react';
 
 export default function LoginPage() {
-  const { login, demoLogin, loading } = useAuth();
+  const { demoLogin, loading } = useAuth();
   const router = useRouter();
   const [demoLoading, setDemoLoading] = useState<'admin' | 'user' | null>(null);
+  const [googleLoading, setGoogleLoading] = useState(false);
 
   const features = [
     {
