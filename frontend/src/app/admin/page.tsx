@@ -17,12 +17,20 @@ interface User {
   berlaku_sampai?: string;
 }
 
+interface Ticket {
+  ticket_id: string;
+  status: string;
+}
+
 export default function AdminDashboard() {
+  const router = useRouter();
   const [users, setUsers] = useState<User[]>([]);
+  const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchUsers();
+    fetchTickets();
   }, []);
 
   const fetchUsers = async () => {
@@ -39,11 +47,28 @@ export default function AdminDashboard() {
     }
   };
 
-  const stats = {
+  const fetchTickets = async () => {
+    try {
+      const response = await fetch('/api/tickets?all=true');
+      if (response.ok) {
+        const data = await response.json();
+        setTickets(data);
+      }
+    } catch (error) {
+      console.error('Error:', error);
+    }
+  };
+
+  const userStats = {
     total: users.length,
     active: users.filter(u => u.status_langganan === 'ACTIVE').length,
     trial: users.filter(u => u.status_langganan === 'TRIAL').length,
     expired: users.filter(u => u.status_langganan === 'EXPIRED').length,
+  };
+
+  const ticketStats = {
+    total: tickets.length,
+    open: tickets.filter(t => t.status === 'OPEN').length,
   };
 
   return (
