@@ -173,8 +173,6 @@ export default function AdminTicketsPage() {
       toast.error('Gagal menghapus tiket');
     }
   };
-    }
-  };
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('id-ID', {
