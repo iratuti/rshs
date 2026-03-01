@@ -57,7 +57,8 @@ export default function AdminTicketsPage() {
   const fetchTickets = async () => {
     setLoading(true);
     try {
-      const response = await fetch('/api/tickets?all=true', {
+      // Use FastAPI backend endpoint
+      const response = await fetch('/api/admin/tickets', {
         credentials: 'include',
         cache: 'no-store'
       });
@@ -67,6 +68,15 @@ export default function AdminTicketsPage() {
         setTickets(data);
       } else {
         console.error('Failed to fetch tickets:', response.status);
+        // Fallback: try Next.js API route
+        const fallbackResponse = await fetch('/api/tickets?all=true', {
+          credentials: 'include',
+          cache: 'no-store'
+        });
+        if (fallbackResponse.ok) {
+          const data = await fallbackResponse.json();
+          setTickets(data);
+        }
       }
     } catch (error) {
       console.error('Error fetching tickets:', error);
