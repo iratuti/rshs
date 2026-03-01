@@ -57,10 +57,16 @@ export default function AdminTicketsPage() {
   const fetchTickets = async () => {
     setLoading(true);
     try {
-      const response = await fetch('/api/tickets?all=true');
+      const response = await fetch('/api/tickets?all=true', {
+        credentials: 'include',
+        cache: 'no-store'
+      });
       if (response.ok) {
         const data = await response.json();
+        console.log('Fetched tickets:', data);
         setTickets(data);
+      } else {
+        console.error('Failed to fetch tickets:', response.status);
       }
     } catch (error) {
       console.error('Error fetching tickets:', error);
