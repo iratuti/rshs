@@ -10,7 +10,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import { HelpCircle, Plus, MessageSquare, Clock, CheckCircle, Send, Loader2 } from 'lucide-react';
+import { HelpCircle, Plus, MessageSquare, Clock, CheckCircle, Send, Loader2, AlertCircle } from 'lucide-react';
+import { validateForm, TicketValidationSchema } from '@/lib/validation';
 
 interface Ticket {
   ticket_id: string;
@@ -28,6 +29,7 @@ export default function SupportPage() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [showNewTicket, setShowNewTicket] = useState(false);
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [newTicket, setNewTicket] = useState({
     kategori: 'Teknis',
     subjek: '',
@@ -53,10 +55,15 @@ export default function SupportPage() {
   };
 
   const handleSubmitTicket = async () => {
-    if (!newTicket.subjek || !newTicket.pesan_user) {
-      toast.error('Lengkapi semua field yang wajib diisi');
+    // Validate form
+    const validation = validateForm(newTicket, TicketValidationSchema);
+    if (!validation.isValid) {
+      setFormErrors(validation.errors);
+      const firstError = Object.values(validation.errors)[0];
+      toast.error(firstError);
       return;
     }
+    setFormErrors({});
 
     setSubmitting(true);
     try {
