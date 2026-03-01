@@ -32,11 +32,22 @@ interface Ticket {
   updated_at?: string;
 }
 
-const STATUS_CONFIG = {
+const STATUS_CONFIG: Record<string, {label: string, color: string, icon: React.ComponentType<{className?: string}>}> = {
+  // Uppercase variants
   OPEN: { label: 'Menunggu', color: 'bg-amber-100 text-amber-700 border-amber-200', icon: Clock },
   IN_PROGRESS: { label: 'Diproses', color: 'bg-blue-100 text-blue-700 border-blue-200', icon: AlertCircle },
   RESOLVED: { label: 'Terjawab', color: 'bg-emerald-100 text-emerald-700 border-emerald-200', icon: CheckCircle },
   CLOSED: { label: 'Ditutup', color: 'bg-slate-100 text-slate-600 border-slate-200', icon: XCircle },
+  // Title case variants (from API)
+  Open: { label: 'Menunggu', color: 'bg-amber-100 text-amber-700 border-amber-200', icon: Clock },
+  InProgress: { label: 'Diproses', color: 'bg-blue-100 text-blue-700 border-blue-200', icon: AlertCircle },
+  Resolved: { label: 'Terjawab', color: 'bg-emerald-100 text-emerald-700 border-emerald-200', icon: CheckCircle },
+  Closed: { label: 'Ditutup', color: 'bg-slate-100 text-slate-600 border-slate-200', icon: XCircle },
+};
+
+// Helper to get status config safely
+const getStatusConfig = (status: string) => {
+  return STATUS_CONFIG[status] || STATUS_CONFIG['OPEN'];
 };
 
 export default function AdminTicketsPage() {
