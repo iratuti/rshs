@@ -687,6 +687,19 @@ async def close_ticket(ticket_id: str, request: Request):
     ticket = await db.tickets.find_one({"ticket_id": ticket_id}, {"_id": 0})
     return ticket
 
+@api_router.delete("/admin/tickets/{ticket_id}")
+async def delete_ticket(ticket_id: str, request: Request):
+    """Delete a ticket (admin only)"""
+    await get_admin_user(request)
+    
+    result = await db.tickets.delete_one({"ticket_id": ticket_id})
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Ticket not found")
+    
+    return {"success": True}
+
+
 @api_router.put("/admin/users/{user_id}/role")
 async def update_user_role(user_id: str, request: Request):
     """Update user role (admin only)"""
