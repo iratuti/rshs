@@ -130,6 +130,7 @@ export default function MasterDataPasienPage() {
 
   const resetForm = () => {
     setFormData({ nama_pasien: '', no_rm: '', no_billing: '', diagnosa: '' });
+    setFormErrors({});
     setEditingPatient(null);
     setShowAddModal(false);
   };
