@@ -213,12 +213,16 @@ export default function AdminTicketsPage() {
     return matchesSearch && matchesStatus && matchesTab;
   });
 
-  // Stats
+  // Stats - handle both uppercase and title case status
+  const isOpenStatus = (status: string) => status === 'OPEN' || status === 'Open';
+  const isInProgressStatus = (status: string) => status === 'IN_PROGRESS' || status === 'InProgress';
+  const isClosedStatus = (status: string) => status === 'RESOLVED' || status === 'Resolved' || status === 'CLOSED' || status === 'Closed';
+  
   const stats = {
     total: tickets.length,
-    open: tickets.filter(t => t.status === 'OPEN').length,
-    inProgress: tickets.filter(t => t.status === 'IN_PROGRESS').length,
-    resolved: tickets.filter(t => t.status === 'RESOLVED' || t.status === 'CLOSED').length,
+    open: tickets.filter(t => isOpenStatus(t.status)).length,
+    inProgress: tickets.filter(t => isInProgressStatus(t.status)).length,
+    resolved: tickets.filter(t => isClosedStatus(t.status)).length,
   };
 
   return (
