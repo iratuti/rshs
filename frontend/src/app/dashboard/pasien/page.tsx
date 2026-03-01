@@ -64,10 +64,15 @@ export default function MasterDataPasienPage() {
   };
 
   const handleSave = async () => {
-    if (!formData.nama_pasien || !formData.no_rm) {
-      toast.error('Nama pasien dan No. RM wajib diisi');
+    // Validate form
+    const validation = validateForm(formData, PatientValidationSchema);
+    if (!validation.isValid) {
+      setFormErrors(validation.errors);
+      const firstError = Object.values(validation.errors)[0];
+      toast.error(firstError);
       return;
     }
+    setFormErrors({});
 
     setSaving(true);
     try {
