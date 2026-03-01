@@ -422,8 +422,8 @@ export default function AdminTicketsPage() {
                       dari {selectedTicket.user_name} ({selectedTicket.user_email})
                     </p>
                   </div>
-                  <Badge className={`${STATUS_CONFIG[selectedTicket.status].color} border`}>
-                    {STATUS_CONFIG[selectedTicket.status].label}
+                  <Badge className={`${getStatusConfig(selectedTicket.status).color} border`}>
+                    {getStatusConfig(selectedTicket.status).label}
                   </Badge>
                 </div>
               </DialogHeader>
