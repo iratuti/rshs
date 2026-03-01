@@ -360,7 +360,8 @@ export default function AdminTicketsPage() {
                 </TableHeader>
                 <TableBody>
                   {filteredTickets.map((ticket) => {
-                    const StatusIcon = STATUS_CONFIG[ticket.status].icon;
+                    const statusConfig = getStatusConfig(ticket.status);
+                    const StatusIcon = statusConfig.icon;
                     return (
                       <TableRow key={ticket.ticket_id} className="hover:bg-slate-50 cursor-pointer" onClick={() => handleViewTicket(ticket)}>
                         <TableCell className="font-mono text-xs text-slate-500">
@@ -380,9 +381,9 @@ export default function AdminTicketsPage() {
                           <p className="text-xs text-slate-500 truncate">{ticket.pesan_user.substring(0, 50)}...</p>
                         </TableCell>
                         <TableCell>
-                          <Badge className={`${STATUS_CONFIG[ticket.status].color} border`}>
+                          <Badge className={`${statusConfig.color} border`}>
                             <StatusIcon className="w-3 h-3 mr-1" />
-                            {STATUS_CONFIG[ticket.status].label}
+                            {statusConfig.label}
                           </Badge>
                         </TableCell>
                         <TableCell className="text-sm text-slate-500">
