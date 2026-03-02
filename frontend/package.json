@@ -45,6 +45,7 @@
     "jspdf": "^4.2.0",
     "jspdf-autotable": "^5.0.7",
     "lucide-react": "^0.575.0",
+    "midtrans-client": "^1.4.3",
     "mongoose": "^9.2.3",
     "next": "16.1.6",
     "next-auth": "4",
