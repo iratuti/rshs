@@ -158,3 +158,67 @@ const TicketSchema = new Schema<ITicket>({
 });
 
 export const Ticket = mongoose.models.Ticket || mongoose.model<ITicket>('Ticket', TicketSchema);
+
+// PromoCode Model
+export interface IPromoCode extends Document {
+  code: string;
+  discountPercentage: number;
+  maxUses: number;
+  currentUses: number;
+  expiresAt: Date;
+  isActive: boolean;
+  description?: string;
+  created_at: Date;
+  updated_at: Date;
+}
+
+const PromoCodeSchema = new Schema<IPromoCode>({
+  code: { type: String, required: true, unique: true, uppercase: true },
+  discountPercentage: { type: Number, required: true, min: 1, max: 100 },
+  maxUses: { type: Number, required: true, min: 1 },
+  currentUses: { type: Number, default: 0 },
+  expiresAt: { type: Date, required: true },
+  isActive: { type: Boolean, default: true },
+  description: { type: String },
+  created_at: { type: Date, default: Date.now },
+  updated_at: { type: Date, default: Date.now },
+});
+
+export const PromoCode = mongoose.models.PromoCode || mongoose.model<IPromoCode>('PromoCode', PromoCodeSchema);
+
+// Payment/Transaction Model
+export interface ITransaction extends Document {
+  transaction_id: string;
+  order_id: string;
+  user_id: string;
+  user_email: string;
+  amount: number;
+  discount_amount: number;
+  final_amount: number;
+  promo_code?: string;
+  status: 'PENDING' | 'SUCCESS' | 'FAILED' | 'EXPIRED';
+  payment_type?: string;
+  midtrans_token?: string;
+  subscription_type: 'monthly' | 'yearly';
+  created_at: Date;
+  updated_at: Date;
+}
+
+const TransactionSchema = new Schema<ITransaction>({
+  transaction_id: { type: String, required: true, unique: true },
+  order_id: { type: String, required: true, unique: true },
+  user_id: { type: String, required: true },
+  user_email: { type: String, required: true },
+  amount: { type: Number, required: true },
+  discount_amount: { type: Number, default: 0 },
+  final_amount: { type: Number, required: true },
+  promo_code: { type: String },
+  status: { type: String, enum: ['PENDING', 'SUCCESS', 'FAILED', 'EXPIRED'], default: 'PENDING' },
+  payment_type: { type: String },
+  midtrans_token: { type: String },
+  subscription_type: { type: String, enum: ['monthly', 'yearly'], required: true },
+  created_at: { type: Date, default: Date.now },
+  updated_at: { type: Date, default: Date.now },
+});
+
+export const Transaction = mongoose.models.Transaction || mongoose.model<ITransaction>('Transaction', TransactionSchema);
