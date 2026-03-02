@@ -16,7 +16,8 @@ import {
   User,
   Users,
   DollarSign,
-  Ticket
+  Ticket,
+  PercentCircle
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -36,6 +37,7 @@ const userMenuItems = [
 const adminMenuItems = [
   { href: '/admin', icon: Users, label: 'Kelola Pengguna' },
   { href: '/admin/tickets', icon: Ticket, label: 'Tiket Support' },
+  { href: '/admin/promo-codes', icon: PercentCircle, label: 'Promo Codes' },
   { href: '/admin/revenue', icon: DollarSign, label: 'Pendapatan' },
 ];
 
