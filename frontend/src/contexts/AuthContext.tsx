@@ -45,7 +45,7 @@ const MOCK_USERS: Record<string, User> = {
     name: 'Demo User',
     role: 'USER',
     ruangan_rs: 'Ruang Melati',
-    status_langganan: 'TRIAL',
+    status_langganan: 'TRIAL',  // Changed to TRIAL to show payment options
     berlaku_sampai: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
   }
 };
