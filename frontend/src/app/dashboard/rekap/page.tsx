@@ -5,27 +5,11 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Calendar, ChevronLeft, ChevronRight, FileDown, Printer, Loader2 } from 'lucide-react';
+import { Calendar, ChevronLeft, ChevronRight, FileDown, Printer, Loader2, Copy, Check } from 'lucide-react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import Papa from 'papaparse';
 import { saveAs } from 'file-saver';
-
-const TINDAKAN_LABELS: { [key: string]: string } = {
-  oksigenasi: 'OKSIGENASI',
-  perawatan_luka_sederhana: 'PERAWATAN LUKA SEDERHANA',
-  pre_pasca_op: 'PRE / PASCA OP',
-  kompres_terbuka: 'KOMPRES TERBUKA',
-  memasang_infus_baru: 'MEMASANG INFUS BARU',
-  memberikan_cairan_infus: 'MEMBERIKAN CAIRAN INFUS',
-  memasang_ngt: 'MEMASANG NGT',
-  transfusi_darah: 'TRANSFUSI DARAH',
-  nebu: 'NEBU',
-  memasang_dc_kateter: 'MEMASANG DC/KATETER',
-  koreksi_caglukonas: 'KOREKSI CAGlukonas',
-  koreksi_kcl: 'KOREKSI KCL',
-  uji_lab: 'UJI LAB',
-};
 
 const MONTHS = [
   { value: 1, label: 'Januari' },
@@ -79,6 +63,56 @@ interface FlattenedRow {
   keterangan: string;
 }
 
+// Component untuk cell dengan tombol copy
+function CopyableCell({ text, rowIndex }: { text: string; rowIndex: number }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      toast.success('Teks berhasil disalin');
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      // Fallback for older browsers
+      const textArea = document.createElement('textarea');
+      textArea.value = text;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+      setCopied(true);
+      toast.success('Teks berhasil disalin');
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  if (!text || text === '-') {
+    return <span className="text-slate-400">-</span>;
+  }
+
+  return (
+    <div className="group relative">
+      <div className="pr-8 text-slate-600 text-xs leading-relaxed">
+        {text}
+      </div>
+      <button
+        onClick={handleCopy}
+        className="absolute right-0 top-0 p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-slate-100 transition-opacity print:hidden"
+        title="Salin ke clipboard"
+        data-testid={`btn-copy-${rowIndex}`}
+      >
+        {copied ? (
+          <Check className="w-4 h-4 text-green-600" />
+        ) : (
+          <Copy className="w-4 h-4 text-slate-400 hover:text-teal-600" />
+        )}
+      </button>
+    </div>
+  );
+}
+
 export default function RekapLogbookPage() {
   const [logbooks, setLogbooks] = useState<Logbook[]>([]);
   const [loading, setLoading] = useState(true);
@@ -127,19 +161,21 @@ export default function RekapLogbookPage() {
     }
   };
 
+  // FIXED: buildKeterangan hanya menggabungkan keterangan_tindakan (checkbox selections)
+  // dan catatan_lainnya - TIDAK termasuk tindakan spesifik (oksigenasi, nebu, dll)
   const buildKeterangan = (tindakan: TindakanItem): string => {
     const parts: string[] = [];
+    
+    // Hanya tambahkan keterangan_tindakan yang dipilih dari checkbox
     if (tindakan.keterangan_tindakan?.length) {
       parts.push(...tindakan.keterangan_tindakan);
     }
-    Object.keys(TINDAKAN_LABELS).forEach(key => {
-      if (tindakan[key]) {
-        parts.push(TINDAKAN_LABELS[key]);
-      }
-    });
+    
+    // Tambahkan catatan lainnya jika ada
     if (tindakan.catatan_lainnya) {
       parts.push(tindakan.catatan_lainnya);
     }
+    
     return parts.join(', ') || '-';
   };
 
@@ -206,64 +242,45 @@ export default function RekapLogbookPage() {
 
     setExporting(true);
     try {
-      const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+      const doc = new jsPDF('landscape');
+      doc.setFontSize(14);
       const monthName = MONTHS.find(m => m.value === selectedMonth)?.label;
-      
-      // Title
-      doc.setFontSize(16);
-      doc.setFont('helvetica', 'bold');
-      doc.text('REKAP LOGBOOK KEPERAWATAN', doc.internal.pageSize.width / 2, 15, { align: 'center' });
-      
-      doc.setFontSize(12);
-      doc.setFont('helvetica', 'normal');
-      doc.text(`Periode: ${monthName} ${selectedYear}`, doc.internal.pageSize.width / 2, 22, { align: 'center' });
+      doc.text(`Rekap Logbook Keperawatan - ${monthName} ${selectedYear}`, 14, 15);
 
-      // Table data
       const tableData = flattenedRows.map(row => [
-        row.rowNum.toString(),
-        new Date(row.tanggal).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' }),
+        row.rowNum,
+        new Date(row.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }),
         row.shift,
         row.nama,
         row.noRM,
         row.noBilling,
         row.diagnosa,
         row.ketergantungan,
-        row.keterangan.substring(0, 50) + (row.keterangan.length > 50 ? '...' : '')
+        row.keterangan
       ]);
 
       autoTable(doc, {
-        startY: 28,
-        head: [['No', 'Tanggal', 'Shift', 'Nama', 'No. RM', 'No. Billing', 'Diagnosa', 'Ketergantungan', 'Keterangan']],
+        startY: 22,
+        head: [['No', 'Tanggal', 'Shift', 'Nama', 'No. RM', 'No. Billing', 'Diagnosa', 'ADL', 'Keterangan']],
         body: tableData,
         styles: { fontSize: 8, cellPadding: 2 },
-        headStyles: { fillColor: [13, 148, 136], textColor: 255, fontStyle: 'bold' },
-        alternateRowStyles: { fillColor: [245, 245, 245] },
+        headStyles: { fillColor: [13, 148, 136] },
         columnStyles: {
           0: { cellWidth: 10 },
           1: { cellWidth: 20 },
           2: { cellWidth: 15 },
-          3: { cellWidth: 35 },
-          4: { cellWidth: 25 },
+          3: { cellWidth: 30 },
+          4: { cellWidth: 20 },
           5: { cellWidth: 20 },
           6: { cellWidth: 30 },
-          7: { cellWidth: 25 },
+          7: { cellWidth: 20 },
           8: { cellWidth: 'auto' }
         }
       });
 
-      // Footer
-      const pageCount = doc.getNumberOfPages();
-      for (let i = 1; i <= pageCount; i++) {
-        doc.setPage(i);
-        doc.setFontSize(8);
-        doc.text(`Halaman ${i} dari ${pageCount}`, doc.internal.pageSize.width - 20, doc.internal.pageSize.height - 10);
-        doc.text(`Dicetak: ${new Date().toLocaleDateString('id-ID')}`, 15, doc.internal.pageSize.height - 10);
-      }
-
       doc.save(`rekap-logbook-${monthName}-${selectedYear}.pdf`);
       toast.success('Export PDF berhasil!');
     } catch (error) {
-      console.error(error);
       toast.error('Gagal export PDF');
     } finally {
       setExporting(false);
@@ -275,8 +292,8 @@ export default function RekapLogbookPage() {
   };
 
   return (
-    <div className="space-y-3 md:space-y-4 animate-slide-in">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 print:hidden">
+    <div className="space-y-4 animate-slide-in">
+      <div className="flex items-center justify-between print:hidden">
         <div>
           <h1 className="text-xl md:text-2xl font-heading font-bold text-slate-900">Rekap Logbook</h1>
           <p className="text-slate-500 text-xs md:text-sm mt-0.5">Tampilan spreadsheet data logbook bulanan</p>
@@ -392,7 +409,9 @@ export default function RekapLogbookPage() {
                       {row.ketergantungan}
                     </span>
                   </td>
-                  <td className="border border-slate-300 px-2 py-2 text-slate-600 text-xs leading-relaxed">{row.keterangan}</td>
+                  <td className="border border-slate-300 px-2 py-2">
+                    <CopyableCell text={row.keterangan} rowIndex={idx} />
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -403,6 +422,7 @@ export default function RekapLogbookPage() {
       {!loading && flattenedRows.length > 0 && (
         <div className="text-sm text-slate-500 text-center print:hidden">
           Total: {flattenedRows.length} catatan dari {logbooks.length} hari kerja
+          <span className="ml-2 text-xs text-slate-400">| Hover pada kolom Keterangan untuk menyalin</span>
         </div>
       )}
 

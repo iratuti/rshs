@@ -1,16 +1,19 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { toast } from 'sonner';
-import { Database, Plus, FileDown, FileUp, Printer, Search, Edit, Trash2, Loader2, Upload, AlertCircle } from 'lucide-react';
+import { Database, Plus, FileDown, FileUp, Printer, Search, Edit, Trash2, Loader2, Upload, AlertCircle, Filter, X, Check, ChevronsUpDown } from 'lucide-react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import Papa from 'papaparse';
@@ -23,12 +26,14 @@ interface Patient {
   no_rm: string;
   no_billing?: string;
   diagnosa?: string;
+  created_at?: string;
 }
 
 export default function MasterDataPasienPage() {
   const [patients, setPatients] = useState<Patient[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchOpen, setSearchOpen] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
   const [editingPatient, setEditingPatient] = useState<Patient | null>(null);
@@ -36,6 +41,7 @@ export default function MasterDataPasienPage() {
   const [importing, setImporting] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+  const [filterDiagnosa, setFilterDiagnosa] = useState<string>('all');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState({
@@ -54,7 +60,13 @@ export default function MasterDataPasienPage() {
       const response = await fetch('/api/patients');
       if (response.ok) {
         const data = await response.json();
-        setPatients(data);
+        // Sort by created_at (newest first)
+        const sorted = data.sort((a: Patient, b: Patient) => {
+          const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
+          const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
+          return dateB - dateA;
+        });
+        setPatients(sorted);
       }
     } catch (error) {
       console.error('Error fetching patients:', error);
@@ -62,6 +74,43 @@ export default function MasterDataPasienPage() {
       setLoading(false);
     }
   };
+
+  // Get unique diagnosa for filter dropdown
+  const uniqueDiagnosa = useMemo(() => {
+    const diagnosaSet = new Set<string>();
+    patients.forEach(p => {
+      if (p.diagnosa) {
+        diagnosaSet.add(p.diagnosa);
+      }
+    });
+    return Array.from(diagnosaSet).sort();
+  }, [patients]);
+
+  // Search suggestions for autocomplete
+  const searchSuggestions = useMemo(() => {
+    if (!searchQuery || searchQuery.length < 1) return [];
+    const query = searchQuery.toLowerCase();
+    return patients
+      .filter(p => 
+        p.nama_pasien.toLowerCase().includes(query) ||
+        p.no_rm.toLowerCase().includes(query)
+      )
+      .slice(0, 8); // Limit to 8 suggestions
+  }, [searchQuery, patients]);
+
+  // Filtered patients
+  const filteredPatients = useMemo(() => {
+    return patients.filter(p => {
+      const matchesSearch = !searchQuery || 
+        p.nama_pasien.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        p.no_rm.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (p.no_billing && p.no_billing.toLowerCase().includes(searchQuery.toLowerCase()));
+      
+      const matchesFilter = filterDiagnosa === 'all' || p.diagnosa === filterDiagnosa;
+      
+      return matchesSearch && matchesFilter;
+    });
+  }, [patients, searchQuery, filterDiagnosa]);
 
   const handleSave = async () => {
     // Validate form
@@ -91,7 +140,8 @@ export default function MasterDataPasienPage() {
           setPatients(patients.map(p => p.patient_id === patient.patient_id ? patient : p));
           toast.success('Pasien berhasil diperbarui');
         } else {
-          setPatients([...patients, patient]);
+          // Add to beginning (newest first)
+          setPatients([patient, ...patients]);
           toast.success('Pasien berhasil ditambahkan');
         }
         resetForm();
@@ -103,13 +153,13 @@ export default function MasterDataPasienPage() {
     }
   };
 
-  const handleDelete = async (patientId: string) => {
-    if (!window.confirm('Yakin ingin menghapus pasien ini?')) return;
+  const handleDelete = async (patient: Patient) => {
+    if (!window.confirm(`Yakin ingin menghapus pasien ${patient.nama_pasien}?`)) return;
 
     try {
-      const response = await fetch(`/api/patients/${patientId}`, { method: 'DELETE' });
+      const response = await fetch(`/api/patients/${patient.patient_id}`, { method: 'DELETE' });
       if (response.ok) {
-        setPatients(patients.filter(p => p.patient_id !== patientId));
+        setPatients(patients.filter(p => p.patient_id !== patient.patient_id));
         toast.success('Pasien berhasil dihapus');
       }
     } catch (error) {
@@ -130,9 +180,61 @@ export default function MasterDataPasienPage() {
 
   const resetForm = () => {
     setFormData({ nama_pasien: '', no_rm: '', no_billing: '', diagnosa: '' });
-    setFormErrors({});
     setEditingPatient(null);
     setShowAddModal(false);
+    setFormErrors({});
+  };
+
+  const handleImportCSV = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setImporting(true);
+    try {
+      Papa.parse(file, {
+        header: true,
+        skipEmptyLines: true,
+        complete: async (results) => {
+          const importedPatients = results.data as Record<string, string>[];
+          let successCount = 0;
+          
+          for (const row of importedPatients) {
+            const patientData = {
+              nama_pasien: row['Nama Pasien'] || row['nama_pasien'] || '',
+              no_rm: row['No. RM'] || row['no_rm'] || '',
+              no_billing: row['No. Billing'] || row['no_billing'] || '',
+              diagnosa: row['Diagnosa'] || row['diagnosa'] || ''
+            };
+
+            if (patientData.nama_pasien && patientData.no_rm) {
+              try {
+                const response = await fetch('/api/patients', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify(patientData)
+                });
+                if (response.ok) successCount++;
+              } catch (e) {
+                console.error('Error importing patient:', e);
+              }
+            }
+          }
+
+          toast.success(`Berhasil import ${successCount} pasien`);
+          fetchPatients();
+          setShowImportModal(false);
+        },
+        error: (error) => {
+          toast.error('Gagal membaca file CSV');
+          console.error('CSV parse error:', error);
+        }
+      });
+    } catch (error) {
+      toast.error('Gagal import data');
+    } finally {
+      setImporting(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
   };
 
   const handleExportCSV = () => {
@@ -147,8 +249,8 @@ export default function MasterDataPasienPage() {
         'No': idx + 1,
         'Nama Pasien': p.nama_pasien,
         'No. RM': p.no_rm,
-        'No. Billing': p.no_billing || '',
-        'Diagnosa': p.diagnosa || ''
+        'No. Billing': p.no_billing || '-',
+        'Diagnosa': p.diagnosa || '-'
       }));
 
       const csv = Papa.unparse(csvData);
@@ -162,68 +264,6 @@ export default function MasterDataPasienPage() {
     }
   };
 
-  const handleImportCSV = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    setImporting(true);
-    Papa.parse(file, {
-      header: true,
-      skipEmptyLines: true,
-      complete: async (results) => {
-        try {
-          const importedPatients = results.data as Record<string, string>[];
-          let successCount = 0;
-          let errorCount = 0;
-
-          for (const row of importedPatients) {
-            const patientData = {
-              nama_pasien: row['Nama Pasien'] || row['nama_pasien'] || '',
-              no_rm: row['No. RM'] || row['no_rm'] || '',
-              no_billing: row['No. Billing'] || row['no_billing'] || '',
-              diagnosa: row['Diagnosa'] || row['diagnosa'] || ''
-            };
-
-            if (!patientData.nama_pasien || !patientData.no_rm) {
-              errorCount++;
-              continue;
-            }
-
-            try {
-              const response = await fetch('/api/patients', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(patientData)
-              });
-              if (response.ok) {
-                successCount++;
-              } else {
-                errorCount++;
-              }
-            } catch {
-              errorCount++;
-            }
-          }
-
-          await fetchPatients();
-          toast.success(`Import selesai: ${successCount} berhasil, ${errorCount} gagal`);
-          setShowImportModal(false);
-        } catch (error) {
-          toast.error('Gagal mengimport data');
-        } finally {
-          setImporting(false);
-          if (fileInputRef.current) {
-            fileInputRef.current.value = '';
-          }
-        }
-      },
-      error: () => {
-        toast.error('Gagal membaca file CSV');
-        setImporting(false);
-      }
-    });
-  };
-
   const handleExportPDF = () => {
     if (filteredPatients.length === 0) {
       toast.error('Tidak ada data untuk di-export');
@@ -232,50 +272,27 @@ export default function MasterDataPasienPage() {
 
     setExporting(true);
     try {
-      const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-      
-      // Title
+      const doc = new jsPDF();
       doc.setFontSize(16);
-      doc.setFont('helvetica', 'bold');
-      doc.text('MASTER DATA PASIEN', doc.internal.pageSize.width / 2, 15, { align: 'center' });
-      
+      doc.text('Master Data Pasien', 14, 20);
       doc.setFontSize(10);
-      doc.setFont('helvetica', 'normal');
-      doc.text(`Tanggal: ${new Date().toLocaleDateString('id-ID')}`, doc.internal.pageSize.width / 2, 22, { align: 'center' });
+      doc.text(`Tanggal: ${new Date().toLocaleDateString('id-ID')}`, 14, 28);
 
-      // Table data
       const tableData = filteredPatients.map((p, idx) => [
-        (idx + 1).toString(),
+        idx + 1,
         p.nama_pasien,
         p.no_rm,
         p.no_billing || '-',
-        (p.diagnosa || '-').substring(0, 40) + ((p.diagnosa?.length || 0) > 40 ? '...' : '')
+        p.diagnosa || '-'
       ]);
 
       autoTable(doc, {
-        startY: 28,
+        startY: 35,
         head: [['No', 'Nama Pasien', 'No. RM', 'No. Billing', 'Diagnosa']],
         body: tableData,
         styles: { fontSize: 9, cellPadding: 3 },
-        headStyles: { fillColor: [13, 148, 136], textColor: 255, fontStyle: 'bold' },
-        alternateRowStyles: { fillColor: [245, 245, 245] },
-        columnStyles: {
-          0: { cellWidth: 12 },
-          1: { cellWidth: 45 },
-          2: { cellWidth: 30 },
-          3: { cellWidth: 30 },
-          4: { cellWidth: 'auto' }
-        }
+        headStyles: { fillColor: [13, 148, 136] },
       });
-
-      // Footer
-      const pageCount = doc.getNumberOfPages();
-      for (let i = 1; i <= pageCount; i++) {
-        doc.setPage(i);
-        doc.setFontSize(8);
-        doc.text(`Halaman ${i} dari ${pageCount}`, doc.internal.pageSize.width - 20, doc.internal.pageSize.height - 10);
-        doc.text(`Total: ${filteredPatients.length} pasien`, 15, doc.internal.pageSize.height - 10);
-      }
 
       doc.save(`master-data-pasien-${new Date().toISOString().split('T')[0]}.pdf`);
       toast.success('Export PDF berhasil!');
@@ -286,15 +303,20 @@ export default function MasterDataPasienPage() {
     }
   };
 
-  const filteredPatients = patients.filter(p =>
-    p.nama_pasien.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    p.no_rm.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const selectSuggestion = (patient: Patient) => {
+    setSearchQuery(patient.nama_pasien);
+    setSearchOpen(false);
+  };
+
+  const clearFilters = () => {
+    setSearchQuery('');
+    setFilterDiagnosa('all');
+  };
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600"></div>
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="w-8 h-8 animate-spin text-teal-600" />
       </div>
     );
   }
@@ -316,6 +338,7 @@ export default function MasterDataPasienPage() {
           <DialogContent>
             <DialogHeader>
               <DialogTitle className="font-heading">{editingPatient ? 'Edit Pasien' : 'Tambah Pasien Baru'}</DialogTitle>
+              <DialogDescription>Isi data pasien dengan lengkap</DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
               <div className="space-y-2">
@@ -385,12 +408,79 @@ export default function MasterDataPasienPage() {
 
       <Card className="border-0 shadow-card bg-white">
         <CardContent className="p-4">
-          <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
-            <div className="relative w-full sm:w-64">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-              <Input placeholder="Cari nama atau No. RM..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} data-testid="input-search-pasien" className="pl-10 h-10" />
-            </div>
-            <div className="flex gap-2 flex-wrap">
+          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+            {/* Search with Autocomplete */}
+            <Popover open={searchOpen && searchSuggestions.length > 0} onOpenChange={setSearchOpen}>
+              <PopoverTrigger asChild>
+                <div className="relative w-full sm:w-72">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <Input 
+                    placeholder="Cari nama pasien atau No. RM..." 
+                    value={searchQuery} 
+                    onChange={(e) => { 
+                      setSearchQuery(e.target.value);
+                      setSearchOpen(true);
+                    }}
+                    onFocus={() => setSearchOpen(true)}
+                    data-testid="input-search-pasien" 
+                    className="pl-10 pr-8 h-10" 
+                  />
+                  {searchQuery && (
+                    <button 
+                      onClick={() => setSearchQuery('')}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+              </PopoverTrigger>
+              <PopoverContent className="w-72 p-0" align="start">
+                <Command>
+                  <CommandList>
+                    <CommandEmpty>Tidak ditemukan</CommandEmpty>
+                    <CommandGroup heading="Saran">
+                      {searchSuggestions.map((patient) => (
+                        <CommandItem
+                          key={patient.patient_id}
+                          value={patient.nama_pasien}
+                          onSelect={() => selectSuggestion(patient)}
+                          className="cursor-pointer"
+                        >
+                          <div className="flex flex-col">
+                            <span className="font-medium">{patient.nama_pasien}</span>
+                            <span className="text-xs text-slate-500">RM: {patient.no_rm}</span>
+                          </div>
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
+
+            <div className="flex gap-2 flex-wrap items-center">
+              {/* Filter by Diagnosa */}
+              <Select value={filterDiagnosa} onValueChange={setFilterDiagnosa}>
+                <SelectTrigger className="w-40 h-10" data-testid="filter-diagnosa">
+                  <Filter className="w-4 h-4 mr-2 text-slate-400" />
+                  <SelectValue placeholder="Filter Diagnosa" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Semua Diagnosa</SelectItem>
+                  {uniqueDiagnosa.map((d) => (
+                    <SelectItem key={d} value={d}>{d.length > 20 ? d.substring(0, 20) + '...' : d}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              {(searchQuery || filterDiagnosa !== 'all') && (
+                <Button variant="ghost" size="sm" onClick={clearFilters} className="text-slate-500">
+                  <X className="w-4 h-4 mr-1" />
+                  Clear
+                </Button>
+              )}
+
               <Dialog open={showImportModal} onOpenChange={setShowImportModal}>
                 <DialogTrigger asChild>
                   <Button variant="outline" size="sm" data-testid="btn-import-csv" className="rounded-full">
@@ -399,29 +489,20 @@ export default function MasterDataPasienPage() {
                 </DialogTrigger>
                 <DialogContent>
                   <DialogHeader>
-                    <DialogTitle>Import Data Pasien dari CSV</DialogTitle>
+                    <DialogTitle className="font-heading">Import Data Pasien</DialogTitle>
+                    <DialogDescription>Upload file CSV dengan format yang sesuai</DialogDescription>
                   </DialogHeader>
-                  <div className="py-4">
-                    <p className="text-sm text-slate-600 mb-4">
-                      Upload file CSV dengan kolom: <strong>Nama Pasien</strong>, <strong>No. RM</strong>, No. Billing, Diagnosa
-                    </p>
-                    <div className="border-2 border-dashed border-slate-200 rounded-lg p-6 text-center">
-                      <Upload className="w-8 h-8 mx-auto text-slate-400 mb-2" />
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept=".csv"
-                        onChange={handleImportCSV}
-                        className="hidden"
-                        id="csv-upload"
-                      />
+                  <div className="py-4 space-y-4">
+                    <div className="border-2 border-dashed border-slate-200 rounded-lg p-8 text-center">
+                      <input type="file" ref={fileInputRef} accept=".csv" onChange={handleImportCSV} className="hidden" id="csv-upload" />
+                      <Upload className="w-10 h-10 mx-auto text-slate-400 mb-3" />
                       <label htmlFor="csv-upload" className="cursor-pointer">
-                        <span className="text-teal-600 hover:text-teal-700 font-medium">Pilih file CSV</span>
-                        <span className="text-slate-500"> atau drag & drop</span>
+                        <span className="text-teal-600 font-medium hover:underline">Pilih file CSV</span>
+                        <p className="text-xs text-slate-400 mt-1">Format: Nama Pasien, No. RM, No. Billing, Diagnosa</p>
                       </label>
                     </div>
                     {importing && (
-                      <div className="mt-4 flex items-center justify-center gap-2 text-teal-600">
+                      <div className="flex items-center justify-center gap-2 text-teal-600">
                         <Loader2 className="w-4 h-4 animate-spin" />
                         <span>Mengimport data...</span>
                       </div>
@@ -429,58 +510,70 @@ export default function MasterDataPasienPage() {
                   </div>
                 </DialogContent>
               </Dialog>
-              <Button variant="outline" size="sm" onClick={handleExportCSV} disabled={exporting || filteredPatients.length === 0} data-testid="btn-export-csv" className="rounded-full">
-                {exporting ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <FileDown className="w-4 h-4 mr-1" />}Export CSV
+
+              <Button variant="outline" size="sm" onClick={handleExportCSV} disabled={exporting} data-testid="btn-export-csv" className="rounded-full">
+                <FileDown className="w-4 h-4 mr-1" />CSV
               </Button>
-              <Button variant="outline" size="sm" onClick={handleExportPDF} disabled={exporting || filteredPatients.length === 0} data-testid="btn-export-pdf" className="rounded-full">
-                {exporting ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Printer className="w-4 h-4 mr-1" />}Export PDF
+              <Button variant="outline" size="sm" onClick={handleExportPDF} disabled={exporting} data-testid="btn-export-pdf" className="rounded-full">
+                <FileDown className="w-4 h-4 mr-1" />PDF
               </Button>
             </div>
           </div>
+
+          {/* Active filters display */}
+          {(searchQuery || filterDiagnosa !== 'all') && (
+            <div className="flex gap-2 mt-3 flex-wrap">
+              {searchQuery && (
+                <Badge variant="secondary" className="text-xs">
+                  Cari: {searchQuery}
+                  <button onClick={() => setSearchQuery('')} className="ml-1"><X className="w-3 h-3" /></button>
+                </Badge>
+              )}
+              {filterDiagnosa !== 'all' && (
+                <Badge variant="secondary" className="text-xs">
+                  Diagnosa: {filterDiagnosa.length > 15 ? filterDiagnosa.substring(0, 15) + '...' : filterDiagnosa}
+                  <button onClick={() => setFilterDiagnosa('all')} className="ml-1"><X className="w-3 h-3" /></button>
+                </Badge>
+              )}
+            </div>
+          )}
         </CardContent>
       </Card>
 
-      <Card className="border-0 shadow-card bg-white overflow-hidden">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-lg font-heading flex items-center gap-2">
-            <Database className="w-5 h-5 text-teal-600" />
-            Data Pasien ({filteredPatients.length})
-          </CardTitle>
-        </CardHeader>
+      <Card className="border-0 shadow-card bg-white">
         <CardContent className="p-0">
           {filteredPatients.length === 0 ? (
-            <div className="text-center py-12 text-slate-400">
+            <div className="text-center py-16 text-slate-400">
               <Database className="w-12 h-12 mx-auto mb-2 opacity-50" />
-              <p>Tidak ada data pasien</p>
-              <p className="text-sm">Klik &quot;Tambah Pasien&quot; untuk menambahkan</p>
+              <p>{searchQuery || filterDiagnosa !== 'all' ? 'Tidak ada pasien yang cocok dengan filter' : 'Belum ada data pasien'}</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow className="bg-slate-50">
-                    <TableHead className="w-12">#</TableHead>
+                    <TableHead className="w-12 text-center">No</TableHead>
                     <TableHead>Nama Pasien</TableHead>
                     <TableHead>No. RM</TableHead>
                     <TableHead>No. Billing</TableHead>
                     <TableHead>Diagnosa</TableHead>
-                    <TableHead className="w-24">Aksi</TableHead>
+                    <TableHead className="w-24 text-right">Aksi</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredPatients.map((patient, idx) => (
                     <TableRow key={patient.patient_id} className="hover:bg-slate-50">
-                      <TableCell className="text-slate-500">{idx + 1}</TableCell>
+                      <TableCell className="text-center text-slate-500">{idx + 1}</TableCell>
                       <TableCell className="font-medium">{patient.nama_pasien}</TableCell>
-                      <TableCell><Badge variant="outline" className="font-mono">{patient.no_rm}</Badge></TableCell>
+                      <TableCell className="font-mono text-sm">{patient.no_rm}</TableCell>
                       <TableCell className="text-slate-600">{patient.no_billing || '-'}</TableCell>
                       <TableCell className="text-slate-600 max-w-xs truncate">{patient.diagnosa || '-'}</TableCell>
-                      <TableCell>
-                        <div className="flex gap-1">
-                          <Button variant="ghost" size="icon" onClick={() => handleEdit(patient)} data-testid={`btn-edit-${patient.patient_id}`} className="h-8 w-8 text-slate-500 hover:text-teal-600">
-                            <Edit className="w-4 h-4" />
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-1">
+                          <Button variant="ghost" size="icon" onClick={() => handleEdit(patient)} className="h-8 w-8" data-testid={`btn-edit-${patient.patient_id}`}>
+                            <Edit className="w-4 h-4 text-slate-500" />
                           </Button>
-                          <Button variant="ghost" size="icon" onClick={() => handleDelete(patient.patient_id)} data-testid={`btn-delete-${patient.patient_id}`} className="h-8 w-8 text-slate-500 hover:text-red-600">
+                          <Button variant="ghost" size="icon" onClick={() => handleDelete(patient)} className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50" data-testid={`btn-delete-${patient.patient_id}`}>
                             <Trash2 className="w-4 h-4" />
                           </Button>
                         </div>
@@ -493,6 +586,10 @@ export default function MasterDataPasienPage() {
           )}
         </CardContent>
       </Card>
+
+      <div className="text-sm text-slate-500 text-center">
+        Menampilkan {filteredPatients.length} dari {patients.length} pasien
+      </div>
     </div>
   );
 }
