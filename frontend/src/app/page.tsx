@@ -133,48 +133,6 @@ export default function LoginPage() {
                 Masuk dengan Google
               </Button>
 
-              {/* Divider */}
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t border-slate-200" />
-                </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-white px-2 text-slate-400">Quick Test</span>
-                </div>
-              </div>
-
-              {/* Demo Login Buttons */}
-              <div className="grid grid-cols-2 gap-3">
-                <Button 
-                  onClick={() => handleDemoLogin('admin')}
-                  disabled={loading || !!demoLoading}
-                  data-testid="login-demo-admin-btn"
-                  variant="outline"
-                  className="h-12 border-teal-200 hover:bg-teal-50 hover:border-teal-300 rounded-xl font-medium transition-all"
-                >
-                  {demoLoading === 'admin' ? (
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  ) : (
-                    <UserCog className="w-4 h-4 mr-2 text-teal-600" />
-                  )}
-                  <span className="text-sm">Demo Admin</span>
-                </Button>
-                <Button 
-                  onClick={() => handleDemoLogin('user')}
-                  disabled={loading || !!demoLoading}
-                  data-testid="login-demo-user-btn"
-                  variant="outline"
-                  className="h-12 border-orange-200 hover:bg-orange-50 hover:border-orange-300 rounded-xl font-medium transition-all"
-                >
-                  {demoLoading === 'user' ? (
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  ) : (
-                    <User className="w-4 h-4 mr-2 text-orange-500" />
-                  )}
-                  <span className="text-sm">Demo User</span>
-                </Button>
-              </div>
-
               <p className="text-xs text-center text-slate-400">
                 Dengan masuk, Anda menyetujui Syarat & Ketentuan kami
               </p>
