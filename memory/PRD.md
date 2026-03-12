@@ -446,7 +446,52 @@ API routes work internally but external preview routes `/api/*` are redirected t
 
 ---
 
+---
+
+## 🔐 CRITICAL SECURITY FIX: TENANT ISOLATION (Feb 28, 2026)
+
+### Bug: Data Leakage Between Users
+**STATUS: ✅ FIXED & VERIFIED (27/27 tests passed)**
+
+**Root Cause:** All Next.js API routes used a broken cookie-based auth (`request.cookies.get('session')`) that fell back to `'demo_user_001'`. When users logged in via Google/NextAuth, they all got the same fallback user_id, causing everyone to see the same data pool.
+
+### Changes Made:
+
+**1. Created Auth Helper (`/app/frontend/src/lib/auth-helpers.ts`):**
+- `getAuthUser()` - Checks NextAuth session first, then demo cookie fallback
+- `requireAuth()` - Returns user or 401
+- `requireAdmin()` - Returns admin user or 403
+
+**2. Secured ALL Next.js API Routes:**
+- `/api/logbooks` (GET, POST) - Filters by authenticated user_id
+- `/api/logbooks/[id]` (PUT, DELETE) - Ownership check
+- `/api/patients` (GET, POST) - Filters by authenticated user_id
+- `/api/patients/[id]` (PUT, DELETE) - NEW: Created with ownership check
+- `/api/tickets` (GET, POST) - Filters by user_id, admin can see all
+- `/api/tickets/[ticketId]` (GET, PUT, DELETE) - Ownership + admin checks
+- `/api/users` (GET) - Admin only
+- `/api/promo` (GET, POST) - Admin only
+- `/api/promo/[code]` (PUT, DELETE) - Admin only
+- `/api/promo/validate` (POST) - Requires auth
+- `/api/billing/create-transaction` (POST) - Uses session user, not body params
+
+**3. Updated FastAPI Backend (`/app/backend/server.py`):**
+- Added NextAuth JWT (JWE) decoding via `decode_nextauth_jwt()`
+- `get_session_from_cookie()` now checks: NextAuth JWT → demo cookie → session_token
+- Auto-creates user in DB from NextAuth session if not exists
+- VIP/Admin email detection for NextAuth users
+
+### Test Results:
+- 27/27 backend security tests passed
+- Test file: `/app/backend/tests/test_tenant_isolation.py`
+- Report: `/app/test_reports/iteration_6.json`
+
+---
+
 ## Next Tasks
-1. Add aria-describedby to DialogContent for accessibility
-2. Refine e-Remunerasi logic per original requirement
-3. Add subscription renewal reminders
+1. Finalize Midtrans Subscription Flow (P1)
+2. Add aria-describedby to DialogContent for accessibility
+3. Refine e-Remunerasi logic per original requirement
+4. Add subscription renewal reminders
+5. Consolidate FastAPI → Next.js API routes
+6. Refactor Mongoose models to TypeScript
