@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectToDatabase from '@/lib/mongodb';
-import { Transaction, PromoCode, User } from '@/lib/models';
+import { Transaction, PromoCode } from '@/lib/models';
+import { getAuthUser } from '@/lib/auth-helpers';
 import { v4 as uuidv4 } from 'uuid';
 
 // Pricing configuration
@@ -11,17 +12,19 @@ const PRICING = {
 
 export async function POST(request: NextRequest) {
   try {
+    const authUser = await getAuthUser();
+    if (!authUser) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     await connectToDatabase();
-    
+
     const body = await request.json();
-    const { 
-      subscriptionType = 'monthly', 
+    const {
+      subscriptionType = 'monthly',
       promoCode,
-      userEmail,
-      userName,
-      userId 
     } = body;
-    
+
     // Validate subscription type
     if (!['monthly', 'yearly'].includes(subscriptionType)) {
       return NextResponse.json(
@@ -29,25 +32,25 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-    
+
     // Calculate pricing
     let originalAmount = PRICING[subscriptionType as keyof typeof PRICING];
     let discountAmount = 0;
     let discountPercentage = 0;
-    
+
     // Validate and apply promo code if provided
     if (promoCode) {
-      const promo = await PromoCode.findOne({ 
+      const promo = await PromoCode.findOne({
         code: promoCode.toUpperCase(),
         isActive: true,
       });
-      
+
       if (promo) {
         const now = new Date();
         if (promo.expiresAt > now && promo.currentUses < promo.maxUses) {
           discountPercentage = promo.discountPercentage;
           discountAmount = Math.floor(originalAmount * (discountPercentage / 100));
-          
+
           // Increment usage count
           await PromoCode.updateOne(
             { code: promoCode.toUpperCase() },
@@ -56,13 +59,13 @@ export async function POST(request: NextRequest) {
         }
       }
     }
-    
+
     const finalAmount = originalAmount - discountAmount;
-    
+
     // Generate unique order ID
     const orderId = `SD-${subscriptionType.toUpperCase()}-${Date.now()}-${uuidv4().slice(0, 8)}`;
     const transactionId = uuidv4();
-    
+
     // Initialize Midtrans Snap
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const midtransClient = require('midtrans-client');
@@ -71,8 +74,8 @@ export async function POST(request: NextRequest) {
       serverKey: process.env.MIDTRANS_SERVER_KEY,
       clientKey: process.env.MIDTRANS_CLIENT_KEY,
     });
-    
-    // Build transaction parameters
+
+    // Build transaction parameters - use session user, not body
     const parameter = {
       transaction_details: {
         order_id: orderId,
@@ -93,23 +96,23 @@ export async function POST(request: NextRequest) {
         }] : []),
       ],
       customer_details: {
-        email: userEmail || 'customer@example.com',
-        first_name: userName || 'Customer',
+        email: authUser.email,
+        first_name: authUser.name,
       },
       credit_card: {
         secure: true,
       },
     };
-    
+
     // Create Midtrans transaction token
     const midtransToken = await snap.createTransactionToken(parameter);
-    
-    // Save transaction to database
+
+    // Save transaction to database - use session user
     await Transaction.create({
       transaction_id: transactionId,
       order_id: orderId,
-      user_id: userId || 'anonymous',
-      user_email: userEmail || 'customer@example.com',
+      user_id: authUser.userId,
+      user_email: authUser.email,
       amount: originalAmount,
       discount_amount: discountAmount,
       final_amount: finalAmount,
@@ -118,7 +121,7 @@ export async function POST(request: NextRequest) {
       midtrans_token: midtransToken,
       subscription_type: subscriptionType,
     });
-    
+
     return NextResponse.json({
       success: true,
       token: midtransToken,
@@ -129,7 +132,6 @@ export async function POST(request: NextRequest) {
       finalAmount,
       subscriptionType,
     });
-    
   } catch (error: unknown) {
     console.error('Create transaction error:', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';

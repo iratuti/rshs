@@ -32,7 +32,7 @@ print('User ID: ' + userId);
 ## Step 2: Test Backend API
 
 ```bash
-API_URL="https://admin-tiket-support.preview.emergentagent.com"
+API_URL="https://dinas-nurse-app.preview.emergentagent.com"
 
 # Test health endpoint
 curl -s "$API_URL/api/health"
@@ -69,7 +69,7 @@ await page.context.add_cookies([{
     "secure": True,
     "sameSite": "None"
 }])
-await page.goto("https://admin-tiket-support.preview.emergentagent.com/dashboard")
+await page.goto("https://dinas-nurse-app.preview.emergentagent.com/dashboard")
 ```
 
 ## Quick Debug

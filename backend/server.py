@@ -12,6 +12,10 @@ from typing import List, Optional
 import uuid
 from datetime import datetime, timezone, timedelta
 from enum import Enum
+import json
+from cryptography.hazmat.primitives.kdf.hkdf import HKDF
+from cryptography.hazmat.primitives import hashes
+from jose import jwe
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -171,9 +175,93 @@ DEMO_ACCOUNTS = {
     }
 }
 
+# ==================== NEXTAUTH JWT DECODER ====================
+SUPER_ADMIN_EMAIL = "theomarhizal@gmail.com"
+VIP_LIFETIME_EMAIL = "iratuti66@gmail.com"
+
+def decode_nextauth_jwt(token: str) -> Optional[dict]:
+    """Decode NextAuth.js v4 encrypted JWT (JWE) token"""
+    try:
+        nextauth_secret = os.environ.get("NEXTAUTH_SECRET")
+        if not nextauth_secret:
+            # Try reading from frontend .env.local
+            env_path = Path(__file__).parent.parent / "frontend" / ".env.local"
+            if env_path.exists():
+                for line in env_path.read_text().splitlines():
+                    if line.startswith("NEXTAUTH_SECRET="):
+                        nextauth_secret = line.split("=", 1)[1].strip()
+                        break
+        
+        if not nextauth_secret:
+            return None
+        
+        # Derive encryption key using HKDF (same as NextAuth.js)
+        hkdf = HKDF(
+            algorithm=hashes.SHA256(),
+            length=32,
+            salt=b"",
+            info=b"NextAuth.js Generated Encryption Key",
+        )
+        key = hkdf.derive(nextauth_secret.encode())
+        
+        # Decrypt the JWE token
+        decrypted = jwe.decrypt(token, key)
+        payload = json.loads(decrypted)
+        return payload
+    except Exception as e:
+        logging.warning(f"Failed to decode NextAuth JWT: {e}")
+        return None
+
 # ==================== AUTH HELPERS ====================
 async def get_session_from_cookie(request: Request) -> Optional[dict]:
-    # First check for demo session cookie (from Next.js demo login)
+    # 1. Check NextAuth session token first (Google login)
+    nextauth_token = (
+        request.cookies.get("__Secure-next-auth.session-token") or
+        request.cookies.get("next-auth.session-token")
+    )
+    if nextauth_token:
+        payload = decode_nextauth_jwt(nextauth_token)
+        if payload and payload.get("email"):
+            email = payload["email"]
+            # Use email as user_id for NextAuth users
+            user_id = payload.get("sub") or email
+            role = "ADMIN" if email == SUPER_ADMIN_EMAIL else "USER"
+            
+            # Ensure user exists in DB
+            existing_user = await db.users.find_one({"email": email}, {"_id": 0})
+            if existing_user:
+                return {
+                    "user_id": existing_user["user_id"],
+                    "role": existing_user.get("role", role),
+                    "email": email,
+                    "source": "nextauth"
+                }
+            else:
+                # Auto-create user from NextAuth session
+                new_user_id = user_id
+                is_vip = email == VIP_LIFETIME_EMAIL
+                is_admin = email == SUPER_ADMIN_EMAIL
+                trial_end = datetime.now(timezone.utc) + timedelta(days=365 if is_vip else 7)
+                new_user = {
+                    "user_id": new_user_id,
+                    "name": payload.get("name", ""),
+                    "email": email,
+                    "picture": payload.get("picture", ""),
+                    "ruangan_rs": "Admin Office" if is_admin else None,
+                    "role": "ADMIN" if is_admin else "USER",
+                    "status_langganan": "ACTIVE" if (is_vip or is_admin) else "TRIAL",
+                    "berlaku_sampai": trial_end.isoformat(),
+                    "created_at": datetime.now(timezone.utc).isoformat()
+                }
+                await db.users.insert_one(new_user)
+                return {
+                    "user_id": new_user_id,
+                    "role": "ADMIN" if is_admin else "USER",
+                    "email": email,
+                    "source": "nextauth"
+                }
+    
+    # 2. Check demo session cookie (from Next.js demo login)
     demo_session = request.cookies.get("session")
     if demo_session:
         if demo_session == "demo_admin@demo.com" or demo_session.startswith("demo_admin"):
@@ -181,7 +269,7 @@ async def get_session_from_cookie(request: Request) -> Optional[dict]:
         elif demo_session == "demo_user@demo.com" or demo_session.startswith("demo_user"):
             return {"user_id": "demo_user_001", "role": "USER"}
     
-    # Then check for regular session_token
+    # 3. Check for regular session_token (FastAPI's own auth)
     session_token = request.cookies.get("session_token")
     if not session_token:
         auth_header = request.headers.get("Authorization")
@@ -243,10 +331,19 @@ async def get_current_user(request: Request) -> User:
             updated_at=now.isoformat()
         )
     
+    # For NextAuth or regular sessions, look up user in DB
     user_doc = await db.users.find_one(
         {"user_id": session["user_id"]},
         {"_id": 0}
     )
+    
+    if not user_doc:
+        # Fallback: try looking up by email for NextAuth users
+        if session.get("email"):
+            user_doc = await db.users.find_one(
+                {"email": session["email"]},
+                {"_id": 0}
+            )
     
     if not user_doc:
         raise HTTPException(status_code=404, detail="User not found")

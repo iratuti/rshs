@@ -4,7 +4,7 @@ from datetime import datetime
 import uuid
 
 class SepulangDinasAPITester:
-    def __init__(self, base_url="https://admin-tiket-support.preview.emergentagent.com"):
+    def __init__(self, base_url="https://dinas-nurse-app.preview.emergentagent.com"):
         self.base_url = base_url
         self.session_token = "test_session_1772073781620"  # From MongoDB setup
         self.tests_run = 0

@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
-import { Logbook } from '@/lib/models';
+import { Patient } from '@/lib/models';
 import { getAuthUser } from '@/lib/auth-helpers';
 
-// PUT /api/logbooks/[id]
+// PUT /api/patients/[id]
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -19,30 +19,30 @@ export async function PUT(
 
     await connectToDatabase();
 
-    // Only allow updating own logbooks (admin can update any)
-    const query: Record<string, string> = { logbook_id: id };
+    // Only allow updating own patients
+    const query: Record<string, string> = { patient_id: id };
     if (!authUser.isAdmin) {
       query.user_id = authUser.userId;
     }
 
-    const logbook = await Logbook.findOneAndUpdate(
+    const patient = await Patient.findOneAndUpdate(
       query,
       { ...body, updated_at: new Date() },
       { new: true }
     ).lean();
 
-    if (!logbook) {
-      return NextResponse.json({ error: 'Logbook tidak ditemukan atau bukan milik Anda' }, { status: 404 });
+    if (!patient) {
+      return NextResponse.json({ error: 'Pasien tidak ditemukan atau bukan milik Anda' }, { status: 404 });
     }
 
-    return NextResponse.json({ ...logbook, _id: undefined });
+    return NextResponse.json({ ...patient, _id: undefined });
   } catch (error) {
-    console.error('Update logbook error:', error);
+    console.error('Update patient error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
-// DELETE /api/logbooks/[id]
+// DELETE /api/patients/[id]
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -57,20 +57,20 @@ export async function DELETE(
 
     await connectToDatabase();
 
-    // Only allow deleting own logbooks (admin can delete any)
-    const query: Record<string, string> = { logbook_id: id };
+    // Only allow deleting own patients
+    const query: Record<string, string> = { patient_id: id };
     if (!authUser.isAdmin) {
       query.user_id = authUser.userId;
     }
 
-    const result = await Logbook.findOneAndDelete(query);
+    const result = await Patient.findOneAndDelete(query);
     if (!result) {
-      return NextResponse.json({ error: 'Logbook tidak ditemukan atau bukan milik Anda' }, { status: 404 });
+      return NextResponse.json({ error: 'Pasien tidak ditemukan atau bukan milik Anda' }, { status: 404 });
     }
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Delete logbook error:', error);
+    console.error('Delete patient error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
