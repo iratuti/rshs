@@ -1,6 +1,8 @@
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { cookies } from 'next/headers';
+import { connectToDatabase } from '@/lib/mongodb';
+import { User } from '@/lib/models';
 
 const SUPER_ADMIN_EMAIL = 'theomarhizal@gmail.com';
 
@@ -14,6 +16,7 @@ export interface AuthUser {
 
 /**
  * Get the authenticated user from NextAuth session or demo cookie.
+ * Looks up existing user in DB by email to ensure consistent user_id.
  * Returns null if no valid session exists.
  */
 export async function getAuthUser(): Promise<AuthUser | null> {
@@ -21,8 +24,21 @@ export async function getAuthUser(): Promise<AuthUser | null> {
   const session = await getServerSession(authOptions);
   if (session?.user?.email) {
     const isAdmin = session.user.role === 'admin' || session.user.email === SUPER_ADMIN_EMAIL;
+    
+    // Look up user in DB by email to get the correct user_id
+    let userId = session.user.id || session.user.email;
+    try {
+      await connectToDatabase();
+      const dbUser = await User.findOne({ email: session.user.email }).lean();
+      if (dbUser) {
+        userId = (dbUser as Record<string, unknown>).user_id as string;
+      }
+    } catch {
+      // DB lookup failed, use session ID
+    }
+    
     return {
-      userId: session.user.id || session.user.email,
+      userId,
       email: session.user.email,
       name: session.user.name || '',
       role: isAdmin ? 'admin' : 'user',
@@ -36,7 +52,6 @@ export async function getAuthUser(): Promise<AuthUser | null> {
   if (sessionCookie) {
     const isAdmin = sessionCookie.includes('admin');
     const email = sessionCookie.replace('demo_', '');
-    const userId = email.replace('@demo.com', '_demo_001');
     return {
       userId: isAdmin ? 'demo_admin_001' : 'demo_user_001',
       email: email,

@@ -868,6 +868,75 @@ async def get_admin_stats(request: Request):
         "open_tickets": open_tickets
     }
 
+# ==================== DATA RECOVERY (ONE-TIME MIGRATION) ====================
+@api_router.post("/admin/recover-data")
+async def recover_orphaned_data(request: Request):
+    """
+    One-time migration: Reassign orphaned data from old user_ids to the correct user.
+    Admin-only. Body: { "source_user_ids": [...], "target_email": "..." }
+    """
+    await get_admin_user(request)
+    body = await request.json()
+
+    source_ids = body.get("source_user_ids", [])
+    target_email = body.get("target_email")
+
+    if not source_ids or not target_email:
+        raise HTTPException(status_code=400, detail="source_user_ids (list) and target_email (string) required")
+
+    # Find or create the target user
+    target_user = await db.users.find_one({"email": target_email}, {"_id": 0})
+    if not target_user:
+        # Create the user entry so data can be assigned
+        target_user_id = f"user_{uuid.uuid4().hex[:12]}"
+        is_vip = target_email == VIP_LIFETIME_EMAIL
+        is_admin = target_email == SUPER_ADMIN_EMAIL
+        trial_end = datetime.now(timezone.utc) + timedelta(days=365 if is_vip else 7)
+        target_user = {
+            "user_id": target_user_id,
+            "name": target_email.split("@")[0],
+            "email": target_email,
+            "picture": "",
+            "ruangan_rs": None,
+            "role": "ADMIN" if is_admin else "USER",
+            "status_langganan": "ACTIVE" if (is_vip or is_admin) else "TRIAL",
+            "berlaku_sampai": trial_end.isoformat(),
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        await db.users.insert_one(target_user)
+        logging.info(f"Created user entry for {target_email} with user_id={target_user_id}")
+    
+    target_user_id = target_user["user_id"]
+    results = {}
+
+    # Migrate logbooks
+    logbook_result = await db.logbooks.update_many(
+        {"user_id": {"$in": source_ids}},
+        {"$set": {"user_id": target_user_id}}
+    )
+    results["logbooks_migrated"] = logbook_result.modified_count
+
+    # Migrate patients
+    patient_result = await db.patients.update_many(
+        {"user_id": {"$in": source_ids}},
+        {"$set": {"user_id": target_user_id}}
+    )
+    results["patients_migrated"] = patient_result.modified_count
+
+    # Migrate tickets
+    ticket_result = await db.tickets.update_many(
+        {"user_id": {"$in": source_ids}},
+        {"$set": {"user_id": target_user_id, "user_email": target_email}}
+    )
+    results["tickets_migrated"] = ticket_result.modified_count
+
+    results["target_user_id"] = target_user_id
+    results["target_email"] = target_email
+    results["source_ids_processed"] = source_ids
+
+    logging.info(f"Data recovery complete: {results}")
+    return {"success": True, **results}
+
 # ==================== BILLING/MIDTRANS ROUTES (PLACEHOLDER) ====================
 @api_router.post("/billing/create-transaction")
 async def create_transaction(request: Request):
