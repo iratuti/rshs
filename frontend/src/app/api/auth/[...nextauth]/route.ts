@@ -5,7 +5,7 @@ import { JWT } from 'next-auth/jwt';
 // REMINDER: DO NOT HARDCODE THE URL, OR ADD ANY FALLBACKS OR REDIRECT URLS, THIS BREAKS THE AUTH
 
 // Super Admin email - this email gets ADMIN role automatically
-const SUPER_ADMIN_EMAIL = 'theomarhizal@gmail.com';
+const SUPER_ADMIN_EMAIL = 'theomahrizal@gmail.com';
 
 // VIP Lifetime email - this email gets premium lifetime access automatically
 const VIP_LIFETIME_EMAIL = 'iratuti66@gmail.com';

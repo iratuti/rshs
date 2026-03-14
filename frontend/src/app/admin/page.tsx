@@ -2,13 +2,14 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Users, UserCheck, UserX, Ticket, Clock, MessageSquare, ArrowRight } from 'lucide-react';
+import { Users, UserCheck, Clock, MessageSquare, ArrowRight, AlertTriangle, Loader2, Database } from 'lucide-react';
 
-interface User {
+interface UserData {
   user_id: string;
   email: string;
   name: string;
@@ -17,16 +18,22 @@ interface User {
   berlaku_sampai?: string;
 }
 
-interface Ticket {
+interface TicketData {
   ticket_id: string;
   status: string;
 }
 
+const SUPER_ADMIN_EMAIL = 'theomarhizal@gmail.com';
+
 export default function AdminDashboard() {
   const router = useRouter();
-  const [users, setUsers] = useState<User[]>([]);
-  const [tickets, setTickets] = useState<Ticket[]>([]);
+  const { user } = useAuth();
+  const [users, setUsers] = useState<UserData[]>([]);
+  const [tickets, setTickets] = useState<TicketData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [recovering, setRecovering] = useState(false);
+
+  const isSuperAdmin = user?.email === SUPER_ADMIN_EMAIL || user?.role === 'ADMIN';
 
   useEffect(() => {
     fetchUsers();
@@ -59,6 +66,47 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleRecoverData = async () => {
+    if (!confirm('Apakah Anda yakin ingin memulihkan data iratuti66@gmail.com?\n\nIni akan memindahkan semua data orphan (demo_user_001, demo_196e6ae26d8f, dll) ke akun iratuti66@gmail.com.')) {
+      return;
+    }
+
+    setRecovering(true);
+    try {
+      const response = await fetch('/api/admin/recover-data', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          source_user_ids: [
+            'demo_user_001',
+            'demo_196e6ae26d8f',
+          ],
+          target_email: 'iratuti66@gmail.com',
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        alert(
+          `DATA RECOVERY BERHASIL!\n\n` +
+          `Logbooks dipulihkan: ${data.logbooks_migrated}\n` +
+          `Patients dipulihkan: ${data.patients_migrated}\n` +
+          `Tickets dipulihkan: ${data.tickets_migrated}\n\n` +
+          `Target: ${data.target_email}\n` +
+          `User ID: ${data.target_user_id}`
+        );
+        fetchUsers();
+      } else {
+        const err = await response.json();
+        alert(`GAGAL: ${err.detail || err.error || 'Unknown error'}`);
+      }
+    } catch (error) {
+      alert(`ERROR: ${error}`);
+    } finally {
+      setRecovering(false);
+    }
+  };
+
   const userStats = {
     total: users.length,
     active: users.filter(u => u.status_langganan === 'ACTIVE').length,
@@ -77,6 +125,43 @@ export default function AdminDashboard() {
         <h1 className="text-2xl font-heading font-bold text-slate-900">Admin Dashboard</h1>
         <p className="text-slate-500 text-sm mt-1">Kelola pengguna dan statistik</p>
       </div>
+
+      {/* RECOVERY BUTTON - Only visible to Super Admin */}
+      {isSuperAdmin && (
+        <Card data-testid="recovery-card" className="border-2 border-amber-400 shadow-lg bg-gradient-to-r from-amber-50 to-orange-50">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between flex-wrap gap-4">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl bg-amber-200 flex items-center justify-center">
+                  <AlertTriangle className="w-6 h-6 text-amber-700" />
+                </div>
+                <div>
+                  <p className="font-bold text-amber-900 text-lg">Data Recovery Tool</p>
+                  <p className="text-sm text-amber-700">Pulihkan data orphan milik iratuti66@gmail.com dari ID lama</p>
+                </div>
+              </div>
+              <Button
+                data-testid="recover-iratuti-btn"
+                onClick={handleRecoverData}
+                disabled={recovering}
+                className="bg-amber-600 hover:bg-amber-700 text-white font-bold px-6 py-3 h-auto text-base shadow-md"
+              >
+                {recovering ? (
+                  <>
+                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                    Memulihkan...
+                  </>
+                ) : (
+                  <>
+                    <Database className="w-5 h-5 mr-2" />
+                    RECOVER IRATUTI PRODUCTION DATA
+                  </>
+                )}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card className="border-0 shadow-card">
@@ -173,26 +258,26 @@ export default function AdminDashboard() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {users.map((user) => (
-                    <TableRow key={user.user_id}>
-                      <TableCell className="font-medium">{user.name}</TableCell>
-                      <TableCell>{user.email}</TableCell>
+                  {users.map((u) => (
+                    <TableRow key={u.user_id}>
+                      <TableCell className="font-medium">{u.name}</TableCell>
+                      <TableCell>{u.email}</TableCell>
                       <TableCell>
-                        <Badge variant={user.role === 'ADMIN' ? 'default' : 'secondary'}>
-                          {user.role}
+                        <Badge variant={u.role === 'ADMIN' ? 'default' : 'secondary'}>
+                          {u.role}
                         </Badge>
                       </TableCell>
                       <TableCell>
                         <Badge className={
-                          user.status_langganan === 'ACTIVE' ? 'bg-emerald-100 text-emerald-700' :
-                          user.status_langganan === 'TRIAL' ? 'bg-amber-100 text-amber-700' :
+                          u.status_langganan === 'ACTIVE' ? 'bg-emerald-100 text-emerald-700' :
+                          u.status_langganan === 'TRIAL' ? 'bg-amber-100 text-amber-700' :
                           'bg-red-100 text-red-700'
                         }>
-                          {user.status_langganan}
+                          {u.status_langganan}
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        {user.berlaku_sampai ? new Date(user.berlaku_sampai).toLocaleDateString('id-ID') : '-'}
+                        {u.berlaku_sampai ? new Date(u.berlaku_sampai).toLocaleDateString('id-ID') : '-'}
                       </TableCell>
                     </TableRow>
                   ))}

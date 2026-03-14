@@ -52,6 +52,9 @@ const MOCK_USERS: Record<string, User> = {
 
 const STORAGE_KEY = 'sepulangdinas_user';
 
+// HARDCODED: Super Admin email - ALWAYS gets ADMIN role
+const SUPER_ADMIN_EMAIL = 'theomarhizal@gmail.com';
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const { data: session, status } = useSession();
   const [demoUser, setDemoUser] = useState<User | null>(null);
@@ -64,13 +67,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         email: session.user.email || '',
         name: session.user.name || '',
         picture: session.user.image || undefined,
-        role: session.user.role === 'admin' ? 'ADMIN' : 'USER',
-        ruangan_rs: session.user.role === 'admin' ? 'Admin Office' : 'Ruang Melati',
-        // VIP lifetime users get ACTIVE, others get TRIAL
-        status_langganan: session.user.isPremium ? 'ACTIVE' : 'TRIAL',
-        berlaku_sampai: session.user.isPremium 
-          ? new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString() // 1 year for premium
-          : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),  // 7 days trial
+        // HARDCODED: Super admin email always gets ADMIN role
+        role: (session.user.role === 'admin' || session.user.email === SUPER_ADMIN_EMAIL) ? 'ADMIN' : 'USER',
+        ruangan_rs: (session.user.role === 'admin' || session.user.email === SUPER_ADMIN_EMAIL) ? 'Admin Office' : 'Ruang Melati',
+        // Super admin and VIP lifetime users get ACTIVE
+        status_langganan: (session.user.isPremium || session.user.email === SUPER_ADMIN_EMAIL) ? 'ACTIVE' : 'TRIAL',
+        berlaku_sampai: (session.user.isPremium || session.user.email === SUPER_ADMIN_EMAIL)
+          ? new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString()
+          : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
       }
     : demoUser;
 
