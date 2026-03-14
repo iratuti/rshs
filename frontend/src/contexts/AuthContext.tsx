@@ -53,7 +53,7 @@ const MOCK_USERS: Record<string, User> = {
 const STORAGE_KEY = 'sepulangdinas_user';
 
 // HARDCODED: Super Admin email - ALWAYS gets ADMIN role
-const SUPER_ADMIN_EMAIL = 'theomarhizal@gmail.com';
+const SUPER_ADMIN_EMAIL = 'theomahrizal@gmail.com';
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const { data: session, status } = useSession();

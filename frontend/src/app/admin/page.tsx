@@ -23,7 +23,7 @@ interface TicketData {
   status: string;
 }
 
-const SUPER_ADMIN_EMAIL = 'theomarhizal@gmail.com';
+const SUPER_ADMIN_EMAIL = 'theomahrizal@gmail.com';
 
 export default function AdminDashboard() {
   const router = useRouter();

@@ -4,7 +4,7 @@ import { cookies } from 'next/headers';
 import { connectToDatabase } from '@/lib/mongodb';
 import { User } from '@/lib/models';
 
-const SUPER_ADMIN_EMAIL = 'theomarhizal@gmail.com';
+const SUPER_ADMIN_EMAIL = 'theomahrizal@gmail.com';
 
 export interface AuthUser {
   userId: string;

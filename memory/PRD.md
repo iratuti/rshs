@@ -352,7 +352,7 @@ The Emergent preview environment routes ALL `/api/*` requests to FastAPI backend
 **Features Implemented:**
 - NextAuth.js v4 with Google Provider configured
 - JWT-based session with custom role assignment
-- **Super Admin Magic Email:** `theomarhizal@gmail.com` automatically gets `admin` role
+- **Super Admin Magic Email:** `theomahrizal@gmail.com` automatically gets `admin` role
 - All other emails get `user` role
 - SessionProvider wrapper in root layout
 - Custom auth error page at `/auth/error`
@@ -394,7 +394,7 @@ The Emergent preview environment routes ALL `/api/*` requests to FastAPI backend
 
 **1. VIP Lifetime Bypass:**
 - Email `iratuti66@gmail.com` automatically gets `isPremium: true` and `plan: 'lifetime'`
-- Email `theomarhizal@gmail.com` gets `role: 'admin'`, `isPremium: true`, `plan: 'lifetime'`
+- Email `theomahrizal@gmail.com` gets `role: 'admin'`, `isPremium: true`, `plan: 'lifetime'`
 - VIP users bypass all payment walls and see "VIP Lifetime Access" on Billing page
 
 **2. PromoCode System:**

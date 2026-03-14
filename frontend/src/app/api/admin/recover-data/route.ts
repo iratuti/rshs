@@ -4,7 +4,7 @@ import { User, Logbook, Patient, Ticket } from '@/lib/models';
 import { getAuthUser } from '@/lib/auth-helpers';
 import { v4 as uuidv4 } from 'uuid';
 
-const SUPER_ADMIN_EMAIL = 'theomarhizal@gmail.com';
+const SUPER_ADMIN_EMAIL = 'theomahrizal@gmail.com';
 const VIP_LIFETIME_EMAIL = 'iratuti66@gmail.com';
 
 export async function POST(request: NextRequest) {

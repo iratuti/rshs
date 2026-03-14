@@ -73,8 +73,8 @@ export default function AdminPromoCodesPage() {
     isActive: true,
   });
   
-  // Check if user is super admin (theomarhizal@gmail.com)
-  const isSuperAdmin = user?.email === 'admin@demo.com' || user?.email === 'theomarhizal@gmail.com';
+  // Check if user is super admin (theomahrizal@gmail.com)
+  const isSuperAdmin = user?.email === 'admin@demo.com' || user?.email === 'theomahrizal@gmail.com';
   
   useEffect(() => {
     if (!authLoading && !isAdmin) {

@@ -176,7 +176,7 @@ DEMO_ACCOUNTS = {
 }
 
 # ==================== NEXTAUTH JWT DECODER ====================
-SUPER_ADMIN_EMAIL = "theomarhizal@gmail.com"
+SUPER_ADMIN_EMAIL = "theomahrizal@gmail.com"
 VIP_LIFETIME_EMAIL = "iratuti66@gmail.com"
 
 def decode_nextauth_jwt(token: str) -> Optional[dict]:
