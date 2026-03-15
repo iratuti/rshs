@@ -17,7 +17,8 @@ import {
   Users,
   DollarSign,
   Ticket,
-  PercentCircle
+  PercentCircle,
+  Shield
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -42,8 +43,11 @@ const adminMenuItems = [
 ];
 
 export function Sidebar({ isAdmin = false }: { isAdmin?: boolean }) {
-  const { user, logout } = useAuth();
+  const { user, logout, isAdmin: userIsAdmin } = useAuth();
   const pathname = usePathname();
+
+  // Show admin menu if explicitly passed OR if user has admin role
+  const showAdminMenu = isAdmin || userIsAdmin;
   const menuItems = isAdmin ? adminMenuItems : userMenuItems;
 
   const getStatusBadge = () => {
@@ -73,7 +77,7 @@ export function Sidebar({ isAdmin = false }: { isAdmin?: boolean }) {
             <span className="font-heading font-bold text-slate-900">
               Sepulang<span className="text-teal-600">Dinas</span>
             </span>
-            {isAdmin && (
+            {showAdminMenu && (
               <Badge variant="secondary" className="ml-2 text-[10px]">ADMIN</Badge>
             )}
           </div>
@@ -123,6 +127,37 @@ export function Sidebar({ isAdmin = false }: { isAdmin?: boolean }) {
             );
           })}
         </div>
+
+        {/* Admin Section - shown on user dashboard when user is admin */}
+        {!isAdmin && showAdminMenu && (
+          <div className="mt-4 pt-4 border-t border-slate-100">
+            <div className="flex items-center gap-2 px-3 mb-2">
+              <Shield className="w-3.5 h-3.5 text-teal-600" />
+              <span className="text-xs font-semibold text-teal-600 uppercase tracking-wider">Admin Panel</span>
+            </div>
+            <div className="space-y-1">
+              {adminMenuItems.map((item) => {
+                const isActive = pathname === item.href || 
+                  (item.href !== '/admin' && pathname.startsWith(item.href));
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    data-testid={`sidebar-admin-${item.label.toLowerCase().replace(/\s/g, '-')}`}
+                    className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all ${
+                      isActive
+                        ? 'bg-teal-50 text-teal-700 font-medium'
+                        : 'text-slate-600 hover:bg-slate-50'
+                    }`}
+                  >
+                    <item.icon className="w-4 h-4" />
+                    <span>{item.label}</span>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </nav>
 
       {/* Logout */}

@@ -2,7 +2,8 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { BookOpen, ClipboardList, FileCheck, Calendar, Database } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { BookOpen, ClipboardList, FileCheck, Calendar, Database, Shield } from 'lucide-react';
 
 const navItems = [
   { href: '/dashboard', icon: BookOpen, label: 'Logbook' },
@@ -14,13 +15,19 @@ const navItems = [
 
 export function BottomNav() {
   const pathname = usePathname();
+  const { isAdmin } = useAuth();
+
+  // If admin, replace last item with Admin link
+  const items = isAdmin
+    ? [...navItems.slice(0, 4), { href: '/admin', icon: Shield, label: 'Admin' }]
+    : navItems;
 
   return (
     <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-100 safe-bottom z-50">
       <div className="flex items-center justify-around h-14 px-1">
-        {navItems.map((item) => {
+        {items.map((item) => {
           const isActive = pathname === item.href || 
-            (item.href !== '/dashboard' && pathname.startsWith(item.href));
+            (item.href !== '/dashboard' && item.href !== '/admin' && pathname.startsWith(item.href));
           return (
             <Link
               key={item.href}

@@ -45,26 +45,32 @@ export const authOptions: NextAuthOptions = {
   },
   callbacks: {
     async jwt({ token, user, account }) {
-      // On initial sign in, add role and premium status based on email
+      // On initial sign in, set defaults
       if (account && user) {
-        // CRITICAL: Check if this is the super admin email
-        if (token.email === SUPER_ADMIN_EMAIL) {
-          token.role = 'admin';
+        token.role = 'user';
+        token.isPremium = false;
+        token.plan = 'free';
+        
+        // VIP lifetime email
+        if (token.email === VIP_LIFETIME_EMAIL) {
           token.isPremium = true;
           token.plan = 'lifetime';
-        } 
-        // CRITICAL: Check if this is the VIP lifetime email
-        else if (token.email === VIP_LIFETIME_EMAIL) {
-          token.role = 'user';
-          token.isPremium = true;
-          token.plan = 'lifetime';
-        } 
-        else {
-          token.role = 'user';
-          token.isPremium = false;
-          token.plan = 'free';
         }
       }
+
+      // ALWAYS enforce super admin role on every token refresh (safety net)
+      if (token.email === SUPER_ADMIN_EMAIL) {
+        token.role = 'admin';
+        token.isPremium = true;
+        token.plan = 'lifetime';
+      }
+
+      // ALWAYS enforce VIP lifetime on every token refresh
+      if (token.email === VIP_LIFETIME_EMAIL) {
+        token.isPremium = true;
+        token.plan = 'lifetime';
+      }
+
       return token;
     },
     async session({ session, token }) {
