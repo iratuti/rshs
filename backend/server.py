@@ -937,6 +937,52 @@ async def recover_orphaned_data(request: Request):
     logging.info(f"Data recovery complete: {results}")
     return {"success": True, **results}
 
+# ==================== REPORT TEMPLATES ====================
+@api_router.get("/report-templates")
+async def get_report_templates(request: Request):
+    """Get user's report templates or defaults"""
+    user = await get_current_user(request)
+    config = await db.report_templates.find_one({"user_id": user.user_id}, {"_id": 0})
+    
+    if config and config.get("ekinerja_templates"):
+        return {
+            "ekinerja_templates": config.get("ekinerja_templates", []),
+            "eremunerasi_templates": config.get("eremunerasi_templates", []),
+            "is_custom": True,
+        }
+    
+    # Return empty to let frontend use its own defaults
+    return {
+        "ekinerja_templates": [],
+        "eremunerasi_templates": [],
+        "is_custom": False,
+    }
+
+@api_router.put("/report-templates")
+async def save_report_templates(request: Request):
+    """Save user's report templates"""
+    user = await get_current_user(request)
+    body = await request.json()
+    
+    await db.report_templates.update_one(
+        {"user_id": user.user_id},
+        {"$set": {
+            "user_id": user.user_id,
+            "ekinerja_templates": body.get("ekinerja_templates", []),
+            "eremunerasi_templates": body.get("eremunerasi_templates", []),
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+        }},
+        upsert=True
+    )
+    return {"success": True}
+
+@api_router.delete("/report-templates")
+async def reset_report_templates(request: Request):
+    """Reset user's report templates to defaults"""
+    user = await get_current_user(request)
+    await db.report_templates.delete_one({"user_id": user.user_id})
+    return {"success": True}
+
 # ==================== BILLING/MIDTRANS ROUTES (PLACEHOLDER) ====================
 @api_router.post("/billing/create-transaction")
 async def create_transaction(request: Request):

@@ -18,7 +18,8 @@ import {
   DollarSign,
   Ticket,
   PercentCircle,
-  Shield
+  Shield,
+  Settings
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -30,6 +31,7 @@ const userMenuItems = [
   { href: '/dashboard/e-kinerja', icon: FileCheck, label: 'e-Kinerja' },
   { href: '/dashboard/rekap', icon: Calendar, label: 'Rekap Logbook' },
   { href: '/dashboard/pasien', icon: Database, label: 'Master Data Pasien' },
+  { href: '/dashboard/settings', icon: Settings, label: 'Pengaturan Template' },
   { href: '/dashboard/billing', icon: CreditCard, label: 'Billing/Langganan' },
   { href: '/dashboard/support', icon: HelpCircle, label: 'Tiket Support' },
   { href: '/dashboard/profile', icon: User, label: 'Profil' },

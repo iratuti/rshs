@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -11,7 +12,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { Calendar, Copy, RefreshCw, FileCheck, FileText } from 'lucide-react';
+import { Calendar, Copy, RefreshCw, FileCheck, FileText, Settings } from 'lucide-react';
+import Link from 'next/link';
+import {
+  type TemplateItem, type ShortcodeData,
+  DEFAULT_EKINERJA_TEMPLATES, replaceShortcodes,
+} from '@/lib/report-templates';
 
 interface TindakanItem {
   nama_pasien: string;
@@ -49,55 +55,8 @@ const MONTHS = [
   { value: 10, label: 'Oktober' }, { value: 11, label: 'November' }, { value: 12, label: 'Desember' },
 ];
 
-const EKINERJA_POINT_DEFINITIONS = [
-  { point: 1, title: 'Menerima Pasien Baru', category: 'PASIEN BARU' },
-  { point: 2, title: 'Menyiapkan Ruangan', category: 'PASIEN BARU' },
-  { point: 4, title: 'Koordinasi DPJP Resume Pulang', category: 'PASIEN PULANG' },
-  { point: 5, title: 'Menerima Pasien Admission', category: 'PASIEN BARU' },
-  { point: 6, title: 'Pengkajian & Evaluasi Keperawatan', category: 'SEMUA PASIEN' },
-  { point: 7, title: 'Melakukan Visit Pasien', category: 'SEMUA PASIEN' },
-  { point: 8, title: 'Dokumentasi di EMR', category: 'SEMUA PASIEN' },
-  { point: 10, title: 'Intervensi & Implementasi', category: 'SEMUA PASIEN' },
-  { point: 11, title: 'Pengisian EMR', category: 'SEMUA PASIEN' },
-  { point: 13, title: 'Asesmen Risiko Jatuh', category: 'SEMUA PASIEN' },
-  { point: 16, title: 'Asuhan Keperawatan SOP', category: 'SEMUA PASIEN' },
-  { point: 17, title: 'Mendampingi DPJP Visite', category: 'SEMUA PASIEN' },
-  { point: 18, title: 'Tindakan Keperawatan Efektif', category: 'SEMUA PASIEN' },
-  { point: 22, title: 'Manajemen Infus', category: 'SEMUA PASIEN' },
-  { point: 24, title: 'Cuci Tangan 5 Momen', category: 'SEMUA PASIEN' },
-  { point: 25, title: 'Administrasi Pulang', category: 'PASIEN PULANG' },
-  { point: 27, title: 'Penggunaan APD', category: 'SEMUA PASIEN' },
-  { point: 28, title: 'Briefing dan Operan', category: 'ABSENSI' },
-  { point: 29, title: 'Absensi Dinas', category: 'ABSENSI' },
-];
-
-const EKINERJA_POINTS = {
-  BARU: [
-    { point: 1, template: (p: string) => `Menerima pasien baru ${p}\nMemastikan ketersediaan tempat tidur untuk pasien yang akan masuk rawat inap ${p}` },
-    { point: 2, template: (p: string) => `Menyiapkan ruangan dan melakukan verbedent sebelum pasien baru ${p} masuk ke ruangan.` },
-    { point: 5, template: (p: string) => `Menerima pasien baru ${p} sesuai dengan pesanan admission` },
-  ],
-  PULANG: [
-    { point: 4, template: (p: string) => `Melakukan koordinasi dengan DPJP terkait resume pulang dan KOP pulang pasien ${p} harus ada sebelum pulang atau H-1` },
-    { point: 25, template: (p: string) => `Memastikan kelengkapan administrasi pasien pulang mulai dari RMK, resume, kelengkapan tindakan atau data pelayanaan, laporan operasi dan obat pulang kepada ${p}` },
-  ],
-  ALL: [
-    { point: 6, template: (p: string) => `Melakukan pengkajian keperawatan lanjutan kepada pasien ${p}\nMelakukan perencanaan keperawatan kepada pasien ${p}\nMelakukan intervensi keperawatan kepada pasien ${p}\nMelakukan implementasi keperawatan kepada pasien ${p}\nMelakukan evaluasi keperawatan kepada pasien ${p}` },
-    { point: 7, template: (p: string) => `Melakukan visit kepada pasien ${p}` },
-    { point: 8, template: (p: string) => `Melakukan asuhan keperawatan awal dan lanjutan pada pasien ${p} di EMR\nMelakukan perencanaan keperawatan pada pasien ${p} di EMR\nMelakukan intervensi keperawatan pada pasien ${p} di EMR\nMelakukan implementasi keperawatan pada pasien ${p} di EMR\nMelakukan evaluasi keperawatan pada pasien ${p} di EMR\nMelakukan dokumentasi keperawatan pada pasien ${p} di EMR\nMendokumentasikan segala tindakan yang dilakukan kepada pasien ${p} di EMR` },
-    { point: 10, template: (p: string) => `Melakukan intervensi keperawatan kepada pasien ${p}\nMelakukan implementasi keperawatan kepada pasien ${p}` },
-    { point: 11, template: (p: string) => `Melakukan pengisian EMR terhadap pasien ${p}, pada setiap melakukan tindakan dan asuhan yang di dokumentasikan di EMR.` },
-    { point: 13, template: (p: string) => `Melakukan assesmen ulang resiko jatuh kepada pasien ${p}\nMemastikan bed plang pasien ${p}\nMemastikan bahwa lingkungan fisik ruangan aman untuk mencegah terjadinya cedera kepada pasien ${p}` },
-    { point: 16, template: (p: string) => `Melakukan asuhan keperawatan kepada pasien ${p} sesuai SOP yang berlaku` },
-    { point: 17, template: (p: string) => `Mendampingi DPJP saat visite kepada pasien ${p}` },
-    { point: 18, template: (p: string) => `Melakukan tindakan keperawatan secara efektif pada pasien ${p} setiap shift sesuai dengan rencana asuhan terpadu` },
-    { point: 22, template: (p: string) => `Setiap melakukan pemasangan infus kepada pasien ${p} diberikan tanggal pemasangan dan jam\nMengecek tanggal dilakukan pemasangan infus kepada pasien ${p}, jika sudah >3 hari pemasangan infus dipindahkan\nMelakukan pengecekan di area pemasangan infus kepada pasien ${p} apakah terjadi kemerahan, bengkak, terasa nyeri dan panas pada area pemasangan infus` },
-    { point: 24, template: (p: string) => `Setelah kontak dengan lingkungan pasien ${p} meakukan cuci tangan dengan handrub atau air mengalir\nSetelah kontak dengan pasien ${p} melakukan cuci tangan dengan handrub atau air mengalir\nSetelah terkena cairan tubuh pasien ${p} melakukan cuci tangan dengan handrub atau air mengalir\nSebelum melakukan tindakan aseptik kepada ${p} melakukan cuci tangan terlebih dahulu dengan handrub atau air mengalir\nSebelum kontak dengan pasien ${p} melakukan cuci tangan terlebih dahulu dengan handrub atau air mengalir` },
-    { point: 27, template: (p: string) => `Setiap melakukan tindakan keperawatan kepada pasien ${p} memakai APD sesuai standar, misalnya membuang urine pasien menggunakan handscone, memakai masker di ruang droplet` },
-  ],
-};
-
 export default function EKinerjaPage() {
+  const { user } = useAuth();
   const [activeMode, setActiveMode] = useState('per-nilai');
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [loading, setLoading] = useState(false);
@@ -107,46 +66,81 @@ export default function EKinerjaPage() {
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [selectedPoint, setSelectedPoint] = useState('6');
   const [monthlyData, setMonthlyData] = useState<{ tanggal: string; deskripsi: string; jumlahKegiatan: number }[]>([]);
+  const [templates, setTemplates] = useState<TemplateItem[]>(DEFAULT_EKINERJA_TEMPLATES);
 
   const currentYear = new Date().getFullYear();
   const years = Array.from({ length: 5 }, (_, i) => currentYear - i);
 
+  // Fetch user templates on mount
+  useEffect(() => {
+    const fetchTemplates = async () => {
+      try {
+        const res = await fetch('/api/report-templates');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.ekinerja_templates?.length) {
+            setTemplates(data.ekinerja_templates);
+          }
+        }
+      } catch { /* use defaults */ }
+    };
+    fetchTemplates();
+  }, []);
+
   const formatPatientName = (t: TindakanItem) => `Tn. ${t.nama_pasien} (${t.no_rm})`;
+
+  const buildShortcodeData = useCallback((logbook: Logbook): ShortcodeData => {
+    const allPatients = logbook.daftar_tindakan.map(formatPatientName);
+    const pasienBaru = logbook.daftar_tindakan.filter(t => t.jenis_pasien === 'PASIEN_BARU').map(formatPatientName);
+    const pasienPulang = logbook.daftar_tindakan.filter(t => t.jenis_pasien === 'PASIEN_PULANG').map(formatPatientName);
+    const shiftTimes = SHIFT_TIMES[logbook.shift] || SHIFT_TIMES.PAGI;
+
+    return {
+      namesAllPasien: allPatients.join(', '),
+      namesPasienBaru: pasienBaru.join(', '),
+      namesPasienPulang: pasienPulang.join(', '),
+      countAllPasien: allPatients.length,
+      countPasienBaru: pasienBaru.length,
+      countPasienPulang: pasienPulang.length,
+      namaRuangan: user?.ruangan_rs || 'Ruang Melati',
+      shift: shiftTimes.label,
+      jamDatang: logbook.jam_datang,
+      jamPulang: logbook.jam_pulang,
+      shiftTime1: shiftTimes.time1,
+      shiftTime2: shiftTimes.time2,
+      shiftTime3: shiftTimes.time3,
+      tindakanDetail: '',
+    };
+  }, [user]);
 
   const generateEKinerja = useCallback((logbook: Logbook): SubPoint[] => {
     if (!logbook?.daftar_tindakan?.length) return [];
 
-    const allPatients = logbook.daftar_tindakan.map(formatPatientName);
-    const pasienBaru = logbook.daftar_tindakan.filter(t => t.jenis_pasien === 'PASIEN_BARU').map(formatPatientName);
-    const pasienPulang = logbook.daftar_tindakan.filter(t => t.jenis_pasien === 'PASIEN_PULANG').map(formatPatientName);
-
-    const semuaPasienStr = allPatients.join(', ');
-    const pasienBaruStr = pasienBaru.length > 0 ? pasienBaru.join(', ') : null;
-    const pasienPulangStr = pasienPulang.length > 0 ? pasienPulang.join(', ') : null;
-
-    const shiftTimes = SHIFT_TIMES[logbook.shift] || SHIFT_TIMES.PAGI;
+    const data = buildShortcodeData(logbook);
     const subPoints: SubPoint[] = [];
 
-    const addSubPoints = (point: number, category: string, text: string) => {
-      const lines = text.split('\n').filter(line => line.trim());
-      lines.forEach((line, idx) => {
-        subPoints.push({ point, subIndex: idx + 1, totalSubs: lines.length, category, text: line.trim() });
-      });
-    };
+    for (const tmpl of templates) {
+      // Skip PASIEN_BARU templates if no new patients
+      if (tmpl.category === 'PASIEN_BARU' && !data.namesPasienBaru) continue;
+      // Skip PASIEN_PULANG templates if no discharged patients
+      if (tmpl.category === 'PASIEN_PULANG' && !data.namesPasienPulang) continue;
 
-    if (pasienBaruStr) {
-      EKINERJA_POINTS.BARU.forEach(({ point, template }) => addSubPoints(point, 'PASIEN BARU', template(pasienBaruStr)));
+      const text = replaceShortcodes(tmpl.template, data);
+      const lines = text.split('\n').filter(l => l.trim());
+      lines.forEach((line, idx) => {
+        subPoints.push({
+          point: tmpl.point,
+          subIndex: idx + 1,
+          totalSubs: lines.length,
+          category: tmpl.category.replace('_', ' '),
+          text: line.trim(),
+        });
+      });
     }
-    if (pasienPulangStr) {
-      EKINERJA_POINTS.PULANG.forEach(({ point, template }) => addSubPoints(point, 'PASIEN PULANG', template(pasienPulangStr)));
-    }
-    EKINERJA_POINTS.ALL.forEach(({ point, template }) => addSubPoints(point, 'SEMUA PASIEN', template(semuaPasienStr)));
-    addSubPoints(28, 'ABSENSI', `Melakukan briefing dan berdoa sebelum jam pelayanan dimulai pukul ${shiftTimes.time1}\nMelakukan dan memulai jam pelayanan pada pukul ${shiftTimes.time2}\nMelakukan operan pada pasien dari dinas ${shiftTimes.label}`);
-    addSubPoints(29, 'ABSENSI', `Melakukan absensi dinas ${shiftTimes.label}, absensi datang pukul ${logbook.jam_datang}, dan absesni pulang pukul ${logbook.jam_pulang}`);
 
     subPoints.sort((a, b) => a.point !== b.point ? a.point - b.point : a.subIndex - b.subIndex);
     return subPoints;
-  }, []);
+  }, [templates, buildShortcodeData]);
 
   const fetchLogbookByDate = async () => {
     setLoading(true);
@@ -182,26 +176,26 @@ export default function EKinerjaPage() {
         const logbooks: Logbook[] = await response.json();
         const pointNum = parseInt(selectedPoint);
         const processed = logbooks.map(logbook => {
-          const patientCount = logbook.daftar_tindakan?.length || 0;
-          if (patientCount === 0) return null;
-          const semuaPasienStr = logbook.daftar_tindakan.map(formatPatientName).join(', ');
-          const pasienBaruStr = logbook.daftar_tindakan.filter(t => t.jenis_pasien === 'PASIEN_BARU').map(formatPatientName).join(', ') || null;
-          const pasienPulangStr = logbook.daftar_tindakan.filter(t => t.jenis_pasien === 'PASIEN_PULANG').map(formatPatientName).join(', ') || null;
-          const shiftTimes = SHIFT_TIMES[logbook.shift] || SHIFT_TIMES.PAGI;
+          if (!logbook.daftar_tindakan?.length) return null;
+          const data = buildShortcodeData(logbook);
 
-          let deskripsi = '';
-          const baruPoint = EKINERJA_POINTS.BARU.find(p => p.point === pointNum);
-          const pulangPoint = EKINERJA_POINTS.PULANG.find(p => p.point === pointNum);
-          const allPoint = EKINERJA_POINTS.ALL.find(p => p.point === pointNum);
+          // Find templates matching the selected point
+          const matchingTemplates = templates.filter(t => t.point === pointNum);
+          if (!matchingTemplates.length) return null;
 
-          if (baruPoint && pasienBaruStr) deskripsi = baruPoint.template(pasienBaruStr);
-          else if (pulangPoint && pasienPulangStr) deskripsi = pulangPoint.template(pasienPulangStr);
-          else if (allPoint) deskripsi = allPoint.template(semuaPasienStr);
-          else if (pointNum === 28) deskripsi = `Melakukan briefing dan berdoa sebelum jam pelayanan dimulai pukul ${shiftTimes.time1}\nMelakukan dan memulai jam pelayanan pada pukul ${shiftTimes.time2}\nMelakukan operan pada pasien dari dinas ${shiftTimes.label}`;
-          else if (pointNum === 29) deskripsi = `Melakukan absensi dinas ${shiftTimes.label}, absensi datang pukul ${logbook.jam_datang}, dan absesni pulang pukul ${logbook.jam_pulang}`;
+          const texts: string[] = [];
+          for (const tmpl of matchingTemplates) {
+            if (tmpl.category === 'PASIEN_BARU' && !data.namesPasienBaru) continue;
+            if (tmpl.category === 'PASIEN_PULANG' && !data.namesPasienPulang) continue;
+            texts.push(replaceShortcodes(tmpl.template, data));
+          }
 
-          if (!deskripsi) return null;
-          return { tanggal: logbook.tanggal_dinas, deskripsi, jumlahKegiatan: patientCount };
+          if (!texts.length) return null;
+          return {
+            tanggal: logbook.tanggal_dinas,
+            deskripsi: texts.join('\n'),
+            jumlahKegiatan: logbook.daftar_tindakan.length,
+          };
         }).filter((d): d is { tanggal: string; deskripsi: string; jumlahKegiatan: number } => d !== null);
 
         setMonthlyData(processed);
@@ -240,20 +234,28 @@ export default function EKinerjaPage() {
     return acc;
   }, {} as Record<number, { category: string; items: SubPoint[] }>);
 
+  // Unique point numbers from templates for the per-tanggal selector
+  const uniquePoints = [...new Set(templates.map(t => t.point))].sort((a, b) => a - b);
+
   const getCategoryColor = (category: string) => {
-    switch (category) {
-      case 'PASIEN BARU': return 'text-emerald-600 bg-emerald-50';
-      case 'PASIEN PULANG': return 'text-orange-600 bg-orange-50';
-      case 'ABSENSI': return 'text-purple-600 bg-purple-50';
-      default: return 'text-blue-600 bg-blue-50';
-    }
+    if (category.includes('BARU')) return 'text-emerald-600 bg-emerald-50';
+    if (category.includes('PULANG')) return 'text-orange-600 bg-orange-50';
+    if (category.includes('ABSENSI')) return 'text-purple-600 bg-purple-50';
+    return 'text-blue-600 bg-blue-50';
   };
 
   return (
     <div className="space-y-4 md:space-y-6 animate-slide-in">
-      <div>
-        <h1 className="text-xl md:text-2xl font-heading font-bold text-slate-900">e-Kinerja</h1>
-        <p className="text-slate-500 text-sm mt-0.5">Generate laporan e-Kinerja dari data logbook</p>
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <div>
+          <h1 className="text-xl md:text-2xl font-heading font-bold text-slate-900">e-Kinerja</h1>
+          <p className="text-slate-500 text-sm mt-0.5">Generate laporan e-Kinerja dari data logbook</p>
+        </div>
+        <Link href="/dashboard/settings" data-testid="link-kinerja-settings">
+          <Button variant="outline" size="sm" className="text-xs gap-1.5">
+            <Settings className="w-3.5 h-3.5" />Atur Template
+          </Button>
+        </Link>
       </div>
 
       <Tabs value={activeMode} onValueChange={setActiveMode} className="w-full">
@@ -374,7 +376,11 @@ export default function EKinerjaPage() {
                   <Label className="text-xs md:text-sm">Point</Label>
                   <Select value={selectedPoint} onValueChange={setSelectedPoint}>
                     <SelectTrigger data-testid="select-point-kinerja" className="h-10 md:h-12 text-sm"><SelectValue /></SelectTrigger>
-                    <SelectContent>{EKINERJA_POINT_DEFINITIONS.map((p) => <SelectItem key={p.point} value={p.point.toString()}>Point {p.point}</SelectItem>)}</SelectContent>
+                    <SelectContent>
+                      {uniquePoints.map((p) => (
+                        <SelectItem key={p} value={p.toString()}>Point {p}</SelectItem>
+                      ))}
+                    </SelectContent>
                   </Select>
                 </div>
                 <Button onClick={fetchMonthlyLogbooks} disabled={loading} data-testid="btn-generate-tanggal-kinerja" className="h-10 md:h-12 bg-teal-600 hover:bg-teal-700">
@@ -387,7 +393,7 @@ export default function EKinerjaPage() {
           <Card className="border-0 shadow-card bg-white overflow-hidden">
             <CardHeader className="pb-2 md:pb-3 p-3 md:p-4">
               <CardTitle className="text-sm md:text-lg font-heading">
-                Point {selectedPoint}: {EKINERJA_POINT_DEFINITIONS.find(p => p.point === parseInt(selectedPoint))?.title}
+                Point {selectedPoint}
               </CardTitle>
               <p className="text-xs text-slate-500 mt-1">{MONTHS.find(m => m.value === selectedMonth)?.label} {selectedYear}</p>
             </CardHeader>

@@ -490,8 +490,22 @@ API routes work internally but external preview routes `/api/*` are redirected t
 
 ## Next Tasks
 1. Finalize Midtrans Subscription Flow (P1)
-2. Add aria-describedby to DialogContent for accessibility
-3. Refine e-Remunerasi logic per original requirement
-4. Add subscription renewal reminders
-5. Consolidate FastAPI → Next.js API routes
-6. Refactor Mongoose models to TypeScript
+2. Add subscription renewal reminders
+3. Consolidate FastAPI → Next.js API routes
+4. Refactor Mongoose models to TypeScript
+
+---
+
+## Per-User Dynamic Report Templates (Mar 2026)
+
+### STATUS: IMPLEMENTED
+
+**Files created/updated:**
+- `/app/frontend/src/lib/report-templates.ts` — Defaults, shortcodes, replaceShortcodes()
+- `/app/frontend/src/lib/models.ts` — ReportTemplate model
+- `/app/frontend/src/app/api/report-templates/route.ts` — Next.js API
+- `/app/frontend/src/app/dashboard/settings/page.tsx` — Settings UI
+- `/app/frontend/src/app/dashboard/e-kinerja/page.tsx` — Updated to use dynamic templates
+- `/app/frontend/src/app/dashboard/e-remunerasi/page.tsx` — Updated to use dynamic templates
+- `/app/backend/server.py` — FastAPI report-templates endpoints
+

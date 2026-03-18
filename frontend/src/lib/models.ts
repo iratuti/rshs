@@ -222,3 +222,32 @@ const TransactionSchema = new Schema<ITransaction>({
 });
 
 export const Transaction = mongoose.models.Transaction || mongoose.model<ITransaction>('Transaction', TransactionSchema);
+
+// ReportTemplate Model - Per-user dynamic report templates
+export interface ITemplateItem {
+  point: number;
+  category: string;
+  template: string;
+}
+
+export interface IReportTemplate extends Document {
+  user_id: string;
+  ekinerja_templates: ITemplateItem[];
+  eremunerasi_templates: ITemplateItem[];
+  updated_at: Date;
+}
+
+const TemplateItemSchema = new Schema<ITemplateItem>({
+  point: { type: Number, required: true },
+  category: { type: String, required: true },
+  template: { type: String, required: true },
+}, { _id: false });
+
+const ReportTemplateSchema = new Schema<IReportTemplate>({
+  user_id: { type: String, required: true, unique: true },
+  ekinerja_templates: [TemplateItemSchema],
+  eremunerasi_templates: [TemplateItemSchema],
+  updated_at: { type: Date, default: Date.now },
+});
+
+export const ReportTemplate = mongoose.models.ReportTemplate || mongoose.model<IReportTemplate>('ReportTemplate', ReportTemplateSchema);

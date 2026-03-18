@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -10,7 +11,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
-import { Calendar, Copy, RefreshCw, ClipboardList, FileText } from 'lucide-react';
+import { Calendar, Copy, RefreshCw, ClipboardList, FileText, Settings } from 'lucide-react';
+import Link from 'next/link';
+import {
+  type TemplateItem, type ShortcodeData,
+  DEFAULT_EREMUNERASI_TEMPLATES, replaceShortcodes,
+} from '@/lib/report-templates';
 
 interface TindakanItem {
   nama_pasien: string;
@@ -47,15 +53,8 @@ const MONTHS = [
   { value: 10, label: 'Oktober' }, { value: 11, label: 'November' }, { value: 12, label: 'Desember' },
 ];
 
-const POINT_DEFINITIONS = [
-  { point: 1, title: 'MELAKUKAN ASESMEN KEPERAWATAN PADA PASIEN SESUAI STANDAR' },
-  { point: 2, title: 'MELAKSANAKAN FUNGSI ADVOKASI DAN KOLABORASI' },
-  { point: 3, title: 'MELAKUKAN DOKUMENTASI ASUHAN DALAM REKAM MEDIK' },
-  { point: 4, title: 'MELAKUKAN TINDAKAN KEPERAWATAN SESUAI JUMLAH PASIEN' },
-  { point: 5, title: 'MELAKUKAN MONITORING DAN PENGELOLAAN PASIEN SESUAI EWS' },
-];
-
 export default function ERemunerasiPage() {
+  const { user } = useAuth();
   const [activeMode, setActiveMode] = useState('per-nilai');
   const [loading, setLoading] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
@@ -65,9 +64,26 @@ export default function ERemunerasiPage() {
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [selectedPoint, setSelectedPoint] = useState('1');
   const [monthlyData, setMonthlyData] = useState<{ tanggal: string; deskripsi: string; jumlahKegiatan: number }[]>([]);
+  const [templates, setTemplates] = useState<TemplateItem[]>(DEFAULT_EREMUNERASI_TEMPLATES);
 
   const currentYear = new Date().getFullYear();
   const years = Array.from({ length: 5 }, (_, i) => currentYear - i);
+
+  // Fetch user templates on mount
+  useEffect(() => {
+    const fetchTemplates = async () => {
+      try {
+        const res = await fetch('/api/report-templates');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.eremunerasi_templates?.length) {
+            setTemplates(data.eremunerasi_templates);
+          }
+        }
+      } catch { /* use defaults */ }
+    };
+    fetchTemplates();
+  }, []);
 
   const formatPatientName = (t: TindakanItem) => `Tn/Ny. ${t.nama_pasien} (${t.no_rm})`;
 
@@ -100,19 +116,45 @@ export default function ERemunerasiPage() {
     return actionLines.join('\n');
   }, []);
 
+  const buildShortcodeData = useCallback((logbook: Logbook): ShortcodeData => {
+    const allPatients = logbook.daftar_tindakan.map(formatPatientName);
+    const pasienBaru = logbook.daftar_tindakan.filter(t => t.jenis_pasien === 'PASIEN_BARU').map(formatPatientName);
+    const pasienPulang = logbook.daftar_tindakan.filter(t => t.jenis_pasien === 'PASIEN_PULANG').map(formatPatientName);
+
+    return {
+      namesAllPasien: allPatients.join(', '),
+      namesPasienBaru: pasienBaru.join(', '),
+      namesPasienPulang: pasienPulang.join(', '),
+      countAllPasien: allPatients.length,
+      countPasienBaru: pasienBaru.length,
+      countPasienPulang: pasienPulang.length,
+      namaRuangan: user?.ruangan_rs || 'Ruang Melati',
+      shift: logbook.shift?.toLowerCase() || '',
+      jamDatang: '',
+      jamPulang: '',
+      shiftTime1: '',
+      shiftTime2: '',
+      shiftTime3: '',
+      tindakanDetail: generatePoint4Text(logbook.daftar_tindakan),
+    };
+  }, [user, generatePoint4Text]);
+
   const generatePointsFromLogbook = useCallback((logbook: Logbook) => {
     if (!logbook?.daftar_tindakan?.length) return [];
-    const semuaPasienStr = logbook.daftar_tindakan.map(formatPatientName).join(', ');
+    const data = buildShortcodeData(logbook);
     const patientCount = logbook.daftar_tindakan.length;
 
-    return [
-      { point: 1, title: 'MELAKUKAN ASESMEN KEPERAWATAN PADA PASIEN SESUAI STANDAR', generatedText: `Melakukan asesmen awal dan lanjutan serta memberikan edukasi kepada pasien ${semuaPasienStr}`, jumlahKegiatan: patientCount },
-      { point: 2, title: 'MELAKSANAKAN FUNGSI ADVOKASI DAN KOLABORASI DENGAN MENDAMPINGI VISITE DPJP SESUAI STANDAR', generatedText: `Melaksanakan fungsi advokasi dan kolaborasi dengan mendampingi visite DPJP kepada pasien ${semuaPasienStr}`, jumlahKegiatan: patientCount },
-      { point: 3, title: 'MELAKUKAN DOKUMENTASI ASUHAN DALAM REKAM MEDIK DENGAN TEPAT DAN LENGKAP SESUAI STANDAR', generatedText: `Melakukan dokumentasi asuhan dalam rekam medis dengan tepat dan lengkap sesuai standar kepada pasien ${semuaPasienStr}`, jumlahKegiatan: patientCount },
-      { point: 4, title: 'MELAKUKAN TINDAKAN KEPERAWATAN SESUAI DENGAN JUMLAH PASIEN YANG DIKELOLA', generatedText: generatePoint4Text(logbook.daftar_tindakan), jumlahKegiatan: patientCount, isMultiLine: true },
-      { point: 5, title: 'MELAKUKAN MONITORING DAN PENGELOLAAN PASIEN SESUAI STANDAR SKOR EWS', generatedText: `Melakukan monitoring EWS dan pengelolaan pasien kepada ${semuaPasienStr}`, jumlahKegiatan: patientCount }
-    ];
-  }, [generatePoint4Text]);
+    return templates.map(tmpl => {
+      const text = replaceShortcodes(tmpl.template, data);
+      return {
+        point: tmpl.point,
+        title: tmpl.category,
+        generatedText: text,
+        jumlahKegiatan: patientCount,
+        isMultiLine: text.includes('\n'),
+      };
+    });
+  }, [templates, buildShortcodeData]);
 
   const fetchLogbookByDate = async () => {
     setLoading(true);
@@ -148,19 +190,18 @@ export default function ERemunerasiPage() {
         const logbooks: Logbook[] = await response.json();
         const pointNum = parseInt(selectedPoint);
         const processed = logbooks.map(logbook => {
-          const patientCount = logbook.daftar_tindakan?.length || 0;
-          if (patientCount === 0) return null;
-          const semuaPasienStr = logbook.daftar_tindakan.map(formatPatientName).join(', ');
-          let deskripsi = '';
-          switch (pointNum) {
-            case 1: deskripsi = `Melakukan asesmen awal dan lanjutan serta memberikan edukasi kepada pasien ${semuaPasienStr}`; break;
-            case 2: deskripsi = `Melaksanakan fungsi advokasi dan kolaborasi dengan mendampingi visite DPJP kepada pasien ${semuaPasienStr}`; break;
-            case 3: deskripsi = `Melakukan dokumentasi asuhan dalam rekam medis dengan tepat dan lengkap sesuai standar kepada pasien ${semuaPasienStr}`; break;
-            case 4: deskripsi = generatePoint4Text(logbook.daftar_tindakan); break;
-            case 5: deskripsi = `Melakukan monitoring EWS dan pengelolaan pasien kepada ${semuaPasienStr}`; break;
-            default: deskripsi = '-';
-          }
-          return { tanggal: logbook.tanggal_dinas, deskripsi, jumlahKegiatan: patientCount };
+          if (!logbook.daftar_tindakan?.length) return null;
+          const data = buildShortcodeData(logbook);
+
+          const matchingTemplate = templates.find(t => t.point === pointNum);
+          if (!matchingTemplate) return null;
+
+          const deskripsi = replaceShortcodes(matchingTemplate.template, data);
+          return {
+            tanggal: logbook.tanggal_dinas,
+            deskripsi,
+            jumlahKegiatan: logbook.daftar_tindakan.length,
+          };
         }).filter((d): d is { tanggal: string; deskripsi: string; jumlahKegiatan: number } => d !== null);
 
         setMonthlyData(processed);
@@ -184,11 +225,20 @@ export default function ERemunerasiPage() {
     copyToClipboard(fullText, 'Semua poin');
   };
 
+  const uniquePoints = [...new Set(templates.map(t => t.point))].sort((a, b) => a - b);
+
   return (
     <div className="space-y-4 md:space-y-6 animate-slide-in">
-      <div>
-        <h1 className="text-xl md:text-2xl font-heading font-bold text-slate-900">e-Remunerasi</h1>
-        <p className="text-slate-500 text-sm mt-0.5">Generate laporan e-Remunerasi dari data logbook</p>
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <div>
+          <h1 className="text-xl md:text-2xl font-heading font-bold text-slate-900">e-Remunerasi</h1>
+          <p className="text-slate-500 text-sm mt-0.5">Generate laporan e-Remunerasi dari data logbook</p>
+        </div>
+        <Link href="/dashboard/settings" data-testid="link-remun-settings">
+          <Button variant="outline" size="sm" className="text-xs gap-1.5">
+            <Settings className="w-3.5 h-3.5" />Atur Template
+          </Button>
+        </Link>
       </div>
 
       <Tabs value={activeMode} onValueChange={setActiveMode} className="w-full">
@@ -249,7 +299,7 @@ export default function ERemunerasiPage() {
                     <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
                       <div className="flex items-start gap-2">
                         <span className="inline-flex items-center justify-center min-w-[28px] h-7 px-2 rounded-lg text-xs font-bold bg-teal-100 text-teal-700">{point.point}</span>
-                        <CardTitle className="text-xs md:text-sm font-heading leading-tight">{point.title}</CardTitle>
+                        <CardTitle className="text-xs md:text-sm font-heading leading-tight uppercase">{point.title}</CardTitle>
                       </div>
                       <Button variant="outline" size="sm" onClick={() => copyToClipboard(point.generatedText, `Point ${point.point}`)} data-testid={`btn-copy-point-${point.point}`} className="rounded-full text-xs h-8 shrink-0">
                         <Copy className="w-3.5 h-3.5 mr-1" />Copy
@@ -294,7 +344,11 @@ export default function ERemunerasiPage() {
                   <Label className="text-xs md:text-sm">Point</Label>
                   <Select value={selectedPoint} onValueChange={setSelectedPoint}>
                     <SelectTrigger data-testid="select-point" className="h-10 md:h-12 text-sm"><SelectValue /></SelectTrigger>
-                    <SelectContent>{POINT_DEFINITIONS.map((p) => <SelectItem key={p.point} value={p.point.toString()}>Point {p.point}</SelectItem>)}</SelectContent>
+                    <SelectContent>
+                      {uniquePoints.map((p) => (
+                        <SelectItem key={p} value={p.toString()}>Point {p}</SelectItem>
+                      ))}
+                    </SelectContent>
                   </Select>
                 </div>
                 <Button onClick={fetchMonthlyLogbooks} disabled={loading} data-testid="btn-generate-tanggal" className="h-10 md:h-12 bg-teal-600 hover:bg-teal-700">
@@ -306,7 +360,9 @@ export default function ERemunerasiPage() {
 
           <Card className="border-0 shadow-card bg-white overflow-hidden">
             <CardHeader className="pb-2 md:pb-3 p-3 md:p-4">
-              <CardTitle className="text-sm md:text-lg font-heading">Point {selectedPoint}: {POINT_DEFINITIONS[parseInt(selectedPoint) - 1]?.title}</CardTitle>
+              <CardTitle className="text-sm md:text-lg font-heading">
+                Point {selectedPoint}
+              </CardTitle>
               <p className="text-xs text-slate-500 mt-1">{MONTHS.find(m => m.value === selectedMonth)?.label} {selectedYear}</p>
             </CardHeader>
             <CardContent className="p-0">
