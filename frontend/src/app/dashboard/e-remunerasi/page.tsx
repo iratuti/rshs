@@ -21,6 +21,9 @@ import {
 interface TindakanItem {
   nama_pasien: string;
   no_rm: string;
+  jenis_pasien: string;
+  ketergantungan: string;
+  keterangan_tindakan: string[];
   [key: string]: unknown;
 }
 
@@ -121,12 +124,16 @@ export default function ERemunerasiPage() {
     const pasienBaru = logbook.daftar_tindakan.filter(t => t.jenis_pasien === 'PASIEN_BARU').map(formatPatientName);
     const pasienPulang = logbook.daftar_tindakan.filter(t => t.jenis_pasien === 'PASIEN_PULANG').map(formatPatientName);
     const pasienLama = logbook.daftar_tindakan.filter(t => t.jenis_pasien !== 'PASIEN_BARU').map(formatPatientName);
+    const pasienTotalCare = logbook.daftar_tindakan.filter(t => t.ketergantungan === 'ADL_TOTAL_CARE').map(formatPatientName);
+    const pasienEwsPerJam = logbook.daftar_tindakan.filter(t => Array.isArray(t.keterangan_tindakan) && t.keterangan_tindakan.includes('Observasi EWS per jam')).map(formatPatientName);
 
     return {
       namesAllPasien: allPatients.join(', '),
       namesPasienBaru: pasienBaru.join(', '),
       namesPasienPulang: pasienPulang.join(', '),
       namesPasienLama: pasienLama.join(', '),
+      namesPasienTotalCare: pasienTotalCare.join(', '),
+      namesPasienEwsPerJam: pasienEwsPerJam.join(', '),
       countAllPasien: allPatients.length,
       countPasienBaru: pasienBaru.length,
       countPasienPulang: pasienPulang.length,

@@ -11,6 +11,8 @@ export const SHORTCODES = [
   { code: '[NAMES_PASIEN_BARU]', label: 'Nama pasien baru', example: 'Ny. Alice (003)' },
   { code: '[NAMES_PASIEN_PULANG]', label: 'Nama pasien pulang', example: 'Tn. Budi (004)' },
   { code: '[NAMES_PASIEN_LAMA]', label: 'Nama pasien lama (semua MINUS pasien baru)', example: 'Tn. Budi (002), Ny. Citra (005)' },
+  { code: '[NAMES_PASIEN_TOTAL_CARE]', label: 'Nama pasien ADL Total Care', example: 'Ny. Alice (001), Tn. Budi (003)' },
+  { code: '[NAMES_PASIEN_EWS_PER_JAM]', label: 'Nama pasien dengan Observasi EWS per jam (EWS >4)', example: 'Ny. Alice (001)' },
   { code: '[COUNT_ALL_PASIEN]', label: 'Jumlah semua pasien', example: '5' },
   { code: '[COUNT_PASIEN_BARU]', label: 'Jumlah pasien baru', example: '2' },
   { code: '[COUNT_PASIEN_PULANG]', label: 'Jumlah pasien pulang', example: '1' },
@@ -75,6 +77,8 @@ export interface ShortcodeData {
   namesPasienBaru: string;
   namesPasienPulang: string;
   namesPasienLama: string;
+  namesPasienTotalCare: string;
+  namesPasienEwsPerJam: string;
   countAllPasien: number;
   countPasienBaru: number;
   countPasienPulang: number;
@@ -103,6 +107,8 @@ export function replaceShortcodes(template: string, data: ShortcodeData): string
     .replace(/\[NAMES_PASIEN_BARU\]/g, data.namesPasienBaru)
     .replace(/\[NAMES_PASIEN_PULANG\]/g, data.namesPasienPulang)
     .replace(/\[NAMES_PASIEN_LAMA\]/g, data.namesPasienLama)
+    .replace(/\[NAMES_PASIEN_TOTAL_CARE\]/g, data.namesPasienTotalCare)
+    .replace(/\[NAMES_PASIEN_EWS_PER_JAM\]/g, data.namesPasienEwsPerJam)
     .replace(/\[COUNT_ALL_PASIEN\]/g, String(data.countAllPasien))
     .replace(/\[COUNT_PASIEN_BARU\]/g, String(data.countPasienBaru))
     .replace(/\[COUNT_PASIEN_PULANG\]/g, String(data.countPasienPulang))
