@@ -85,7 +85,7 @@ export default function ERemunerasiPage() {
     fetchTemplates();
   }, []);
 
-  const formatPatientName = (t: TindakanItem) => `Tn/Ny. ${t.nama_pasien} (${t.no_rm})`;
+  const formatPatientName = (t: TindakanItem) => `${t.nama_pasien} (${t.no_rm})`;
 
   const generatePoint4Text = useCallback((daftarTindakan: TindakanItem[]) => {
     const actionGroups: Record<string, string[]> = {};
@@ -120,11 +120,13 @@ export default function ERemunerasiPage() {
     const allPatients = logbook.daftar_tindakan.map(formatPatientName);
     const pasienBaru = logbook.daftar_tindakan.filter(t => t.jenis_pasien === 'PASIEN_BARU').map(formatPatientName);
     const pasienPulang = logbook.daftar_tindakan.filter(t => t.jenis_pasien === 'PASIEN_PULANG').map(formatPatientName);
+    const pasienLama = logbook.daftar_tindakan.filter(t => t.jenis_pasien !== 'PASIEN_BARU').map(formatPatientName);
 
     return {
       namesAllPasien: allPatients.join(', '),
       namesPasienBaru: pasienBaru.join(', '),
       namesPasienPulang: pasienPulang.join(', '),
+      namesPasienLama: pasienLama.join(', '),
       countAllPasien: allPatients.length,
       countPasienBaru: pasienBaru.length,
       countPasienPulang: pasienPulang.length,

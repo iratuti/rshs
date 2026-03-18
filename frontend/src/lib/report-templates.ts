@@ -7,9 +7,10 @@ export interface TemplateItem {
 }
 
 export const SHORTCODES = [
-  { code: '[NAMES_ALL_PASIEN]', label: 'Nama semua pasien', example: 'Tn. A (001), Ny. B (002)' },
-  { code: '[NAMES_PASIEN_BARU]', label: 'Nama pasien baru', example: 'Tn. C (003)' },
-  { code: '[NAMES_PASIEN_PULANG]', label: 'Nama pasien pulang', example: 'Ny. D (004)' },
+  { code: '[NAMES_ALL_PASIEN]', label: 'Nama semua pasien', example: 'Ny. Alice (001), Tn. Budi (002)' },
+  { code: '[NAMES_PASIEN_BARU]', label: 'Nama pasien baru', example: 'Ny. Alice (003)' },
+  { code: '[NAMES_PASIEN_PULANG]', label: 'Nama pasien pulang', example: 'Tn. Budi (004)' },
+  { code: '[NAMES_PASIEN_LAMA]', label: 'Nama pasien lama (semua MINUS pasien baru)', example: 'Tn. Budi (002), Ny. Citra (005)' },
   { code: '[COUNT_ALL_PASIEN]', label: 'Jumlah semua pasien', example: '5' },
   { code: '[COUNT_PASIEN_BARU]', label: 'Jumlah pasien baru', example: '2' },
   { code: '[COUNT_PASIEN_PULANG]', label: 'Jumlah pasien pulang', example: '1' },
@@ -21,6 +22,7 @@ export const SHORTCODES = [
   { code: '[SHIFT_TIME2]', label: 'Waktu +15 menit', example: '07:15' },
   { code: '[SHIFT_TIME3]', label: 'Waktu +30 menit', example: '07:30' },
   { code: '[TINDAKAN_DETAIL]', label: 'Detail tindakan per pasien (khusus Remunerasi poin 4)', example: '1. Memberikan oksigenasi...' },
+  { code: '[IF_PASIEN_BARU]...[ELSE]...[ENDIF]', label: 'Kondisional: teks berbeda jika ada/tidak ada pasien baru', example: '[IF_PASIEN_BARU] Ada pasien baru [ELSE] Tidak ada pasien baru [ENDIF]' },
 ];
 
 export const DEFAULT_EKINERJA_TEMPLATES: TemplateItem[] = [
@@ -72,6 +74,7 @@ export interface ShortcodeData {
   namesAllPasien: string;
   namesPasienBaru: string;
   namesPasienPulang: string;
+  namesPasienLama: string;
   countAllPasien: number;
   countPasienBaru: number;
   countPasienPulang: number;
@@ -86,10 +89,20 @@ export interface ShortcodeData {
 }
 
 export function replaceShortcodes(template: string, data: ShortcodeData): string {
-  return template
+  // 1. Process conditional blocks: [IF_PASIEN_BARU] text_true [ELSE] text_false [ENDIF]
+  let result = template.replace(
+    /\[IF_PASIEN_BARU\]([\s\S]*?)\[ELSE\]([\s\S]*?)\[ENDIF\]/g,
+    (_match, trueBlock, falseBlock) => {
+      return data.countPasienBaru > 0 ? trueBlock.trim() : falseBlock.trim();
+    }
+  );
+
+  // 2. Replace all shortcodes
+  result = result
     .replace(/\[NAMES_ALL_PASIEN\]/g, data.namesAllPasien)
     .replace(/\[NAMES_PASIEN_BARU\]/g, data.namesPasienBaru)
     .replace(/\[NAMES_PASIEN_PULANG\]/g, data.namesPasienPulang)
+    .replace(/\[NAMES_PASIEN_LAMA\]/g, data.namesPasienLama)
     .replace(/\[COUNT_ALL_PASIEN\]/g, String(data.countAllPasien))
     .replace(/\[COUNT_PASIEN_BARU\]/g, String(data.countPasienBaru))
     .replace(/\[COUNT_PASIEN_PULANG\]/g, String(data.countPasienPulang))
@@ -101,4 +114,6 @@ export function replaceShortcodes(template: string, data: ShortcodeData): string
     .replace(/\[SHIFT_TIME2\]/g, data.shiftTime2)
     .replace(/\[SHIFT_TIME3\]/g, data.shiftTime3)
     .replace(/\[TINDAKAN_DETAIL\]/g, data.tindakanDetail);
+
+  return result;
 }

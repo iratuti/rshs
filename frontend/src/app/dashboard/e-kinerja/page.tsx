@@ -87,18 +87,20 @@ export default function EKinerjaPage() {
     fetchTemplates();
   }, []);
 
-  const formatPatientName = (t: TindakanItem) => `Tn. ${t.nama_pasien} (${t.no_rm})`;
+  const formatPatientName = (t: TindakanItem) => `${t.nama_pasien} (${t.no_rm})`;
 
   const buildShortcodeData = useCallback((logbook: Logbook): ShortcodeData => {
     const allPatients = logbook.daftar_tindakan.map(formatPatientName);
     const pasienBaru = logbook.daftar_tindakan.filter(t => t.jenis_pasien === 'PASIEN_BARU').map(formatPatientName);
     const pasienPulang = logbook.daftar_tindakan.filter(t => t.jenis_pasien === 'PASIEN_PULANG').map(formatPatientName);
+    const pasienLama = logbook.daftar_tindakan.filter(t => t.jenis_pasien !== 'PASIEN_BARU').map(formatPatientName);
     const shiftTimes = SHIFT_TIMES[logbook.shift] || SHIFT_TIMES.PAGI;
 
     return {
       namesAllPasien: allPatients.join(', '),
       namesPasienBaru: pasienBaru.join(', '),
       namesPasienPulang: pasienPulang.join(', '),
+      namesPasienLama: pasienLama.join(', '),
       countAllPasien: allPatients.length,
       countPasienBaru: pasienBaru.length,
       countPasienPulang: pasienPulang.length,
