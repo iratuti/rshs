@@ -17,7 +17,7 @@ from datetime import datetime
 import uuid
 
 # Base URL from environment - use the external URL which routes through K8s ingress to FastAPI
-BASE_URL = "https://dinas-nurse-app.preview.emergentagent.com"
+BASE_URL = "https://sepulang-admin-fix.preview.emergentagent.com"
 
 
 class TestAuthenticationRequired:

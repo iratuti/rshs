@@ -51,9 +51,10 @@ class TicketCategory(str, Enum):
     FINANCE = "Finance"
 
 class TicketStatus(str, Enum):
-    OPEN = "Open"
-    ANSWERED = "Answered"
-    CLOSED = "Closed"
+    OPEN = "OPEN"
+    IN_PROGRESS = "IN_PROGRESS"
+    RESOLVED = "RESOLVED"
+    CLOSED = "CLOSED"
 
 # ==================== MODELS ====================
 class User(BaseModel):
@@ -791,7 +792,32 @@ async def reply_ticket(ticket_id: str, reply_data: TicketReply, request: Request
         {"ticket_id": ticket_id},
         {"$set": {
             "balasan_admin": reply_data.balasan_admin,
-            "status": TicketStatus.ANSWERED.value,
+            "status": TicketStatus.RESOLVED.value,
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Ticket not found")
+    
+    ticket = await db.tickets.find_one({"ticket_id": ticket_id}, {"_id": 0})
+    return ticket
+
+@api_router.put("/admin/tickets/{ticket_id}/status")
+async def update_ticket_status(ticket_id: str, request: Request):
+    """Update ticket status (admin only)"""
+    await get_admin_user(request)
+    body = await request.json()
+    new_status = body.get("status")
+    
+    valid_statuses = [s.value for s in TicketStatus]
+    if new_status not in valid_statuses:
+        raise HTTPException(status_code=400, detail=f"Invalid status. Must be one of: {valid_statuses}")
+    
+    result = await db.tickets.update_one(
+        {"ticket_id": ticket_id},
+        {"$set": {
+            "status": new_status,
             "updated_at": datetime.now(timezone.utc).isoformat()
         }}
     )
@@ -843,6 +869,34 @@ async def update_user_role(user_id: str, request: Request):
     result = await db.users.update_one(
         {"user_id": user_id},
         {"$set": {"role": body.get("role", UserRole.USER.value)}}
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    user = await db.users.find_one({"user_id": user_id}, {"_id": 0})
+    return user
+
+@api_router.put("/admin/users/{user_id}")
+async def update_user_subscription(user_id: str, request: Request):
+    """Update user subscription status and expiry (admin only)"""
+    await get_admin_user(request)
+    body = await request.json()
+    
+    update_fields = {}
+    if "status_langganan" in body:
+        update_fields["status_langganan"] = body["status_langganan"]
+    if "berlaku_sampai" in body:
+        update_fields["berlaku_sampai"] = body["berlaku_sampai"]
+    if "role" in body:
+        update_fields["role"] = body["role"]
+    
+    if not update_fields:
+        raise HTTPException(status_code=400, detail="No fields to update")
+    
+    result = await db.users.update_one(
+        {"user_id": user_id},
+        {"$set": update_fields}
     )
     
     if result.matched_count == 0:

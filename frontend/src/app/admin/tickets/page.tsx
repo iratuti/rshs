@@ -26,28 +26,34 @@ interface Ticket {
   kategori: string;
   subjek: string;
   pesan_user: string;
-  status: 'OPEN' | 'IN_PROGRESS' | 'RESOLVED' | 'CLOSED';
+  status: string;
   balasan_admin?: string;
   created_at: string;
   updated_at?: string;
 }
 
+// Normalize status from various backend formats to standard uppercase
+const normalizeStatus = (status: string): string => {
+  const map: Record<string, string> = {
+    'Open': 'OPEN',
+    'Answered': 'RESOLVED',
+    'Closed': 'CLOSED',
+    'InProgress': 'IN_PROGRESS',
+    'In_Progress': 'IN_PROGRESS',
+    'Resolved': 'RESOLVED',
+  };
+  return map[status] || status;
+};
+
 const STATUS_CONFIG: Record<string, {label: string, color: string, icon: React.ComponentType<{className?: string}>}> = {
-  // Uppercase variants
   OPEN: { label: 'Menunggu', color: 'bg-amber-100 text-amber-700 border-amber-200', icon: Clock },
   IN_PROGRESS: { label: 'Diproses', color: 'bg-blue-100 text-blue-700 border-blue-200', icon: AlertCircle },
   RESOLVED: { label: 'Terjawab', color: 'bg-emerald-100 text-emerald-700 border-emerald-200', icon: CheckCircle },
   CLOSED: { label: 'Ditutup', color: 'bg-slate-100 text-slate-600 border-slate-200', icon: XCircle },
-  // Title case variants (from API)
-  Open: { label: 'Menunggu', color: 'bg-amber-100 text-amber-700 border-amber-200', icon: Clock },
-  InProgress: { label: 'Diproses', color: 'bg-blue-100 text-blue-700 border-blue-200', icon: AlertCircle },
-  Resolved: { label: 'Terjawab', color: 'bg-emerald-100 text-emerald-700 border-emerald-200', icon: CheckCircle },
-  Closed: { label: 'Ditutup', color: 'bg-slate-100 text-slate-600 border-slate-200', icon: XCircle },
 };
 
-// Helper to get status config safely
 const getStatusConfig = (status: string) => {
-  return STATUS_CONFIG[status] || STATUS_CONFIG['OPEN'];
+  return STATUS_CONFIG[normalizeStatus(status)] || STATUS_CONFIG['OPEN'];
 };
 
 export default function AdminTicketsPage() {
@@ -60,6 +66,7 @@ export default function AdminTicketsPage() {
   const [replyText, setReplyText] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState('all');
+  const [modalStatus, setModalStatus] = useState<string>('OPEN');
 
   useEffect(() => {
     fetchTickets();
@@ -68,26 +75,20 @@ export default function AdminTicketsPage() {
   const fetchTickets = async () => {
     setLoading(true);
     try {
-      // Use FastAPI backend endpoint
       const response = await fetch('/api/admin/tickets', {
         credentials: 'include',
         cache: 'no-store'
       });
       if (response.ok) {
         const data = await response.json();
-        console.log('Fetched tickets:', data);
-        setTickets(data);
+        // Normalize all ticket statuses
+        const normalized = data.map((t: Ticket) => ({
+          ...t,
+          status: normalizeStatus(t.status)
+        }));
+        setTickets(normalized);
       } else {
-        console.error('Failed to fetch tickets:', response.status);
-        // Fallback: try Next.js API route
-        const fallbackResponse = await fetch('/api/tickets?all=true', {
-          credentials: 'include',
-          cache: 'no-store'
-        });
-        if (fallbackResponse.ok) {
-          const data = await fallbackResponse.json();
-          setTickets(data);
-        }
+        toast.error('Gagal memuat tiket');
       }
     } catch (error) {
       console.error('Error fetching tickets:', error);
@@ -100,6 +101,7 @@ export default function AdminTicketsPage() {
   const handleViewTicket = (ticket: Ticket) => {
     setSelectedTicket(ticket);
     setReplyText(ticket.balasan_admin || '');
+    setModalStatus(normalizeStatus(ticket.status));
     setShowDetailModal(true);
   };
 
@@ -111,58 +113,57 @@ export default function AdminTicketsPage() {
 
     setSubmitting(true);
     try {
-      // Use FastAPI backend endpoint for reply
       const response = await fetch(`/api/admin/tickets/${selectedTicket.ticket_id}/reply`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ 
-          balasan_admin: replyText
-        })
+        body: JSON.stringify({ balasan_admin: replyText })
       });
 
       if (response.ok) {
         const updatedTicket = await response.json();
-        setTickets(tickets.map(t => t.ticket_id === updatedTicket.ticket_id ? updatedTicket : t));
-        setSelectedTicket(updatedTicket);
+        const normalized = { ...updatedTicket, status: normalizeStatus(updatedTicket.status) };
+        setTickets(prev => prev.map(t => t.ticket_id === selectedTicket.ticket_id ? { ...t, ...normalized } : t));
+        setSelectedTicket(prev => prev ? { ...prev, ...normalized } : prev);
+        setModalStatus(normalized.status);
         toast.success('Balasan berhasil dikirim');
       } else {
-        toast.error('Gagal mengirim balasan');
+        const err = await response.json().catch(() => ({}));
+        toast.error(`Gagal mengirim balasan: ${err.detail || err.error || response.status}`);
       }
     } catch (error) {
+      console.error('Reply error:', error);
       toast.error('Gagal mengirim balasan');
     } finally {
       setSubmitting(false);
     }
   };
 
-  const handleStatusChange = async (ticketId: string, newStatus: string) => {
+  const handleStatusChange = async (newStatus: string) => {
+    if (!selectedTicket) return;
+    const ticketId = selectedTicket.ticket_id;
+
     try {
-      // For closing a ticket, use the close endpoint
-      const endpoint = newStatus === 'CLOSED' 
-        ? `/api/admin/tickets/${ticketId}/close`
-        : `/api/admin/tickets/${ticketId}/reply`;
-      
-      const body = newStatus === 'CLOSED' 
-        ? {}
-        : { balasan_admin: selectedTicket?.balasan_admin || '' };
-      
-      const response = await fetch(endpoint, {
+      const response = await fetch(`/api/admin/tickets/${ticketId}/status`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify(body)
+        body: JSON.stringify({ status: newStatus })
       });
 
       if (response.ok) {
         const updatedTicket = await response.json();
-        setTickets(tickets.map(t => t.ticket_id === updatedTicket.ticket_id ? updatedTicket : t));
-        if (selectedTicket?.ticket_id === ticketId) {
-          setSelectedTicket(updatedTicket);
-        }
+        const normalized = { ...updatedTicket, status: normalizeStatus(updatedTicket.status) };
+        setTickets(prev => prev.map(t => t.ticket_id === ticketId ? { ...t, ...normalized } : t));
+        setSelectedTicket(prev => prev ? { ...prev, ...normalized } : prev);
+        setModalStatus(normalized.status);
         toast.success('Status tiket diperbarui');
+      } else {
+        const err = await response.json().catch(() => ({}));
+        toast.error(`Gagal mengubah status: ${err.detail || err.error || ''}`);
       }
     } catch (error) {
+      console.error('Status change error:', error);
       toast.error('Gagal mengubah status');
     }
   };
@@ -195,34 +196,28 @@ export default function AdminTicketsPage() {
     });
   };
 
-  // Filter tickets based on search, status, and tab
   const filteredTickets = tickets.filter(ticket => {
     const matchesSearch = 
-      ticket.subjek.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      ticket.user_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      ticket.user_email.toLowerCase().includes(searchQuery.toLowerCase());
+      ticket.subjek?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      ticket.user_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      ticket.user_email?.toLowerCase().includes(searchQuery.toLowerCase());
     
     const matchesStatus = statusFilter === 'ALL' || ticket.status === statusFilter;
     
     const matchesTab = 
       activeTab === 'all' ? true :
-      activeTab === 'open' ? isOpenStatus(ticket.status) :
-      activeTab === 'resolved' ? isClosedStatus(ticket.status) :
+      activeTab === 'open' ? (ticket.status === 'OPEN' || ticket.status === 'IN_PROGRESS') :
+      activeTab === 'resolved' ? (ticket.status === 'RESOLVED' || ticket.status === 'CLOSED') :
       true;
     
     return matchesSearch && matchesStatus && matchesTab;
   });
 
-  // Stats - handle both uppercase and title case status
-  const isOpenStatus = (status: string) => status === 'OPEN' || status === 'Open';
-  const isInProgressStatus = (status: string) => status === 'IN_PROGRESS' || status === 'InProgress';
-  const isClosedStatus = (status: string) => status === 'RESOLVED' || status === 'Resolved' || status === 'CLOSED' || status === 'Closed';
-  
   const stats = {
     total: tickets.length,
-    open: tickets.filter(t => isOpenStatus(t.status)).length,
-    inProgress: tickets.filter(t => isInProgressStatus(t.status)).length,
-    resolved: tickets.filter(t => isClosedStatus(t.status)).length,
+    open: tickets.filter(t => t.status === 'OPEN').length,
+    inProgress: tickets.filter(t => t.status === 'IN_PROGRESS').length,
+    resolved: tickets.filter(t => t.status === 'RESOLVED' || t.status === 'CLOSED').length,
   };
 
   return (
@@ -232,7 +227,7 @@ export default function AdminTicketsPage() {
           <h1 className="text-2xl font-heading font-bold text-slate-900">Manajemen Tiket Support</h1>
           <p className="text-slate-500 text-sm mt-1">Kelola dan jawab tiket dari pengguna</p>
         </div>
-        <Button variant="outline" onClick={fetchTickets} data-testid="btn-refresh">
+        <Button variant="outline" onClick={fetchTickets} data-testid="btn-refresh-tickets">
           <RefreshCw className="w-4 h-4 mr-2" />
           Refresh
         </Button>
@@ -247,7 +242,7 @@ export default function AdminTicketsPage() {
                 <Inbox className="w-5 h-5 text-blue-600" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-slate-900">{stats.total}</p>
+                <p className="text-2xl font-bold text-slate-900" data-testid="stat-total">{stats.total}</p>
                 <p className="text-xs text-slate-500">Total Tiket</p>
               </div>
             </div>
@@ -260,7 +255,7 @@ export default function AdminTicketsPage() {
                 <Clock className="w-5 h-5 text-amber-600" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-slate-900">{stats.open}</p>
+                <p className="text-2xl font-bold text-slate-900" data-testid="stat-open">{stats.open}</p>
                 <p className="text-xs text-slate-500">Menunggu</p>
               </div>
             </div>
@@ -273,7 +268,7 @@ export default function AdminTicketsPage() {
                 <AlertCircle className="w-5 h-5 text-blue-600" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-slate-900">{stats.inProgress}</p>
+                <p className="text-2xl font-bold text-slate-900" data-testid="stat-in-progress">{stats.inProgress}</p>
                 <p className="text-xs text-slate-500">Diproses</p>
               </div>
             </div>
@@ -286,7 +281,7 @@ export default function AdminTicketsPage() {
                 <CheckCircle className="w-5 h-5 text-emerald-600" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-slate-900">{stats.resolved}</p>
+                <p className="text-2xl font-bold text-slate-900" data-testid="stat-resolved">{stats.resolved}</p>
                 <p className="text-xs text-slate-500">Selesai</p>
               </div>
             </div>
@@ -367,7 +362,7 @@ export default function AdminTicketsPage() {
                     const statusConfig = getStatusConfig(ticket.status);
                     const StatusIcon = statusConfig.icon;
                     return (
-                      <TableRow key={ticket.ticket_id} className="hover:bg-slate-50 cursor-pointer" onClick={() => handleViewTicket(ticket)}>
+                      <TableRow key={ticket.ticket_id} className="hover:bg-slate-50 cursor-pointer" onClick={() => handleViewTicket(ticket)} data-testid={`ticket-row-${ticket.ticket_id}`}>
                         <TableCell className="font-mono text-xs text-slate-500">
                           {ticket.ticket_id.slice(-8)}
                         </TableCell>
@@ -382,7 +377,7 @@ export default function AdminTicketsPage() {
                         </TableCell>
                         <TableCell className="max-w-xs">
                           <p className="truncate font-medium">{ticket.subjek}</p>
-                          <p className="text-xs text-slate-500 truncate">{ticket.pesan_user.substring(0, 50)}...</p>
+                          <p className="text-xs text-slate-500 truncate">{ticket.pesan_user?.substring(0, 50)}...</p>
                         </TableCell>
                         <TableCell>
                           <Badge className={`${statusConfig.color} border`}>
@@ -426,8 +421,8 @@ export default function AdminTicketsPage() {
                       dari {selectedTicket.user_name} ({selectedTicket.user_email})
                     </p>
                   </div>
-                  <Badge className={`${getStatusConfig(selectedTicket.status).color} border`}>
-                    {getStatusConfig(selectedTicket.status).label}
+                  <Badge className={`${getStatusConfig(modalStatus).color} border`} data-testid="ticket-detail-status-badge">
+                    {getStatusConfig(modalStatus).label}
                   </Badge>
                 </div>
               </DialogHeader>
@@ -436,9 +431,9 @@ export default function AdminTicketsPage() {
                 {/* Ticket Info */}
                 <div className="flex items-center gap-4 text-sm text-slate-500">
                   <span>ID: {selectedTicket.ticket_id.slice(-8)}</span>
-                  <span>•</span>
+                  <span>-</span>
                   <Badge variant="outline">{selectedTicket.kategori}</Badge>
-                  <span>•</span>
+                  <span>-</span>
                   <span>{formatDate(selectedTicket.created_at)}</span>
                 </div>
 
@@ -475,7 +470,7 @@ export default function AdminTicketsPage() {
                 {/* Status Change */}
                 <div className="flex items-center gap-4">
                   <Label>Ubah Status:</Label>
-                  <Select value={selectedTicket.status} onValueChange={(v) => handleStatusChange(selectedTicket.ticket_id, v)}>
+                  <Select value={modalStatus} onValueChange={(v) => handleStatusChange(v)}>
                     <SelectTrigger className="w-40" data-testid="select-change-status">
                       <SelectValue />
                     </SelectTrigger>
@@ -490,11 +485,11 @@ export default function AdminTicketsPage() {
               </div>
 
               <DialogFooter className="flex gap-2">
-                <Button variant="outline" onClick={() => handleDelete(selectedTicket.ticket_id)} className="text-red-600 hover:text-red-700 hover:bg-red-50">
+                <Button variant="outline" onClick={() => handleDelete(selectedTicket.ticket_id)} className="text-red-600 hover:text-red-700 hover:bg-red-50" data-testid="btn-delete-ticket-modal">
                   <Trash2 className="w-4 h-4 mr-2" />
                   Hapus
                 </Button>
-                <Button variant="outline" onClick={() => setShowDetailModal(false)}>
+                <Button variant="outline" onClick={() => setShowDetailModal(false)} data-testid="btn-close-modal">
                   Tutup
                 </Button>
                 <Button onClick={handleReply} disabled={submitting || !replyText.trim()} data-testid="btn-send-reply" className="bg-teal-600 hover:bg-teal-700">
