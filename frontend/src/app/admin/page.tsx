@@ -42,7 +42,7 @@ export default function AdminDashboard() {
 
   const fetchUsers = async () => {
     try {
-      const response = await fetch('/api/users');
+      const response = await fetch('/api/admin/users');
       if (response.ok) {
         const data = await response.json();
         setUsers(data);
@@ -56,7 +56,7 @@ export default function AdminDashboard() {
 
   const fetchTickets = async () => {
     try {
-      const response = await fetch('/api/tickets?all=true');
+      const response = await fetch('/api/admin/tickets');
       if (response.ok) {
         const data = await response.json();
         setTickets(data);

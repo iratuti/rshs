@@ -1,6 +1,8 @@
 import NextAuth, { NextAuthOptions, Session } from 'next-auth';
 import GoogleProvider from 'next-auth/providers/google';
 import { JWT } from 'next-auth/jwt';
+import { connectToDatabase } from '@/lib/mongodb';
+import { User } from '@/lib/models';
 
 // REMINDER: DO NOT HARDCODE THE URL, OR ADD ANY FALLBACKS OR REDIRECT URLS, THIS BREAKS THE AUTH
 
@@ -44,13 +46,53 @@ export const authOptions: NextAuthOptions = {
     strategy: 'jwt',
   },
   callbacks: {
+    async signIn({ user }) {
+      // Persist user to database on every Google sign-in
+      try {
+        await connectToDatabase();
+        const email = user.email;
+        if (!email) return true;
+
+        const existingUser = await User.findOne({ email });
+        if (!existingUser) {
+          // Create new user
+          const isAdmin = email === SUPER_ADMIN_EMAIL;
+          const isVip = email === VIP_LIFETIME_EMAIL;
+          const trialEnd = new Date();
+          trialEnd.setDate(trialEnd.getDate() + (isVip || isAdmin ? 365 : 7));
+
+          await User.create({
+            user_id: user.id || `google_${email.split('@')[0]}_${Date.now().toString(36)}`,
+            name: user.name || email.split('@')[0],
+            email,
+            picture: user.image || '',
+            ruangan_rs: isAdmin ? 'Admin Office' : null,
+            role: isAdmin ? 'ADMIN' : 'USER',
+            status_langganan: (isVip || isAdmin) ? 'ACTIVE' : 'TRIAL',
+            berlaku_sampai: trialEnd.toISOString(),
+            created_at: new Date().toISOString(),
+          });
+          console.log(`[NextAuth] New user created: ${email}`);
+        } else {
+          // Update last login info
+          await User.updateOne(
+            { email },
+            { $set: { name: user.name || existingUser.name, picture: user.image || existingUser.picture, last_login: new Date().toISOString() } }
+          );
+        }
+      } catch (error) {
+        console.error('[NextAuth] Error persisting user:', error);
+        // Don't block sign-in if DB fails
+      }
+      return true;
+    },
     async jwt({ token, user, account }) {
       // On initial sign in, set defaults
       if (account && user) {
         token.role = 'user';
         token.isPremium = false;
         token.plan = 'free';
-        
+
         // VIP lifetime email
         if (token.email === VIP_LIFETIME_EMAIL) {
           token.isPremium = true;
@@ -74,7 +116,6 @@ export const authOptions: NextAuthOptions = {
       return token;
     },
     async session({ session, token }) {
-      // Pass role and premium status from token to session
       if (session.user) {
         session.user.role = token.role || 'user';
         session.user.id = token.sub;
@@ -83,12 +124,7 @@ export const authOptions: NextAuthOptions = {
       }
       return session;
     },
-    async signIn({ user, account, profile }) {
-      // Allow sign in
-      return true;
-    },
     async redirect({ url, baseUrl }) {
-      // After sign in, redirect based on role
       if (url.startsWith(baseUrl)) {
         return url;
       }
